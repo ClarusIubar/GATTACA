@@ -46,9 +46,9 @@ npm run dev
 
 ## Supabase 설정
 
-- SQL 스키마: [docs/sql/supabase-schema.sql](/D:/Code305/GATTACA/docs/sql/supabase-schema.sql)
-- Kakao 로그인 설정: [docs/11-deployment-cicd-operations.md](/D:/Code305/GATTACA/docs/11-deployment-cicd-operations.md)
-- 운영 아키텍처: [docs/06-architecture-data-model.md](/D:/Code305/GATTACA/docs/06-architecture-data-model.md)
+- SQL 스키마: [docs/sql/supabase-schema.sql](./docs/sql/supabase-schema.sql)
+- Kakao 로그인 설정: [docs/11-deployment-cicd-operations.md](./docs/11-deployment-cicd-operations.md)
+- 운영 아키텍처: [docs/06-architecture-data-model.md](./docs/06-architecture-data-model.md)
 
 필수 준비 사항:
 
@@ -62,7 +62,7 @@ npm run dev
 
 GitHub Actions 워크플로우는 `main` 브랜치 푸시 시 Pages 아티팩트를 빌드하고 배포합니다.
 
-- 워크플로우: [.github/workflows/deploy.yml](/D:/Code305/GATTACA/.github/workflows/deploy.yml)
+- 워크플로우: [.github/workflows/deploy.yml](./.github/workflows/deploy.yml)
 - Vite `base`는 GitHub Actions 환경에서 `/GATTACA/`를 사용하도록 설정되어 있습니다.
 - SPA 라우팅 새로고침 대응을 위해 `index.html`과 `public/404.html`에 GitHub Pages redirect 스크립트를 포함했습니다.
 
@@ -77,18 +77,18 @@ GitHub Actions 워크플로우는 `main` 브랜치 푸시 시 Pages 아티팩트
 
 ## 문서 링크
 
-- 중앙 정책: [docs/00-human-ai-collaboration-policy.md](/D:/Code305/GATTACA/docs/00-human-ai-collaboration-policy.md)
-- 비전: [docs/01-vision-success-metrics.md](/D:/Code305/GATTACA/docs/01-vision-success-metrics.md)
-- PRD/백로그: [docs/04-prd-backlog.md](/D:/Code305/GATTACA/docs/04-prd-backlog.md)
-- UI/UX: [docs/05-ui-ux-design-system.md](/D:/Code305/GATTACA/docs/05-ui-ux-design-system.md)
-- 아키텍처: [docs/06-architecture-data-model.md](/D:/Code305/GATTACA/docs/06-architecture-data-model.md)
-- 기술 스택: [docs/07-tech-stack-dev-env.md](/D:/Code305/GATTACA/docs/07-tech-stack-dev-env.md)
-- 워크플로우: [docs/08-workflow-coding-standards.md](/D:/Code305/GATTACA/docs/08-workflow-coding-standards.md)
-- AI 활용: [docs/09-ai-strategy-prompts.md](/D:/Code305/GATTACA/docs/09-ai-strategy-prompts.md)
-- 테스트/QA: [docs/10-test-qa-strategy.md](/D:/Code305/GATTACA/docs/10-test-qa-strategy.md)
-- 배포/운영: [docs/11-deployment-cicd-operations.md](/D:/Code305/GATTACA/docs/11-deployment-cicd-operations.md)
-- 회고/개선: [docs/12-retrospective-improvement.md](/D:/Code305/GATTACA/docs/12-retrospective-improvement.md)
-- GitHub Wiki 원고: [docs/wiki/Home.md](/D:/Code305/GATTACA/docs/wiki/Home.md)
+- 중앙 정책: [docs/00-human-ai-collaboration-policy.md](./docs/00-human-ai-collaboration-policy.md)
+- 비전: [docs/01-vision-success-metrics.md](./docs/01-vision-success-metrics.md)
+- PRD/백로그: [docs/04-prd-backlog.md](./docs/04-prd-backlog.md)
+- UI/UX: [docs/05-ui-ux-design-system.md](./docs/05-ui-ux-design-system.md)
+- 아키텍처: [docs/06-architecture-data-model.md](./docs/06-architecture-data-model.md)
+- 기술 스택: [docs/07-tech-stack-dev-env.md](./docs/07-tech-stack-dev-env.md)
+- 워크플로우: [docs/08-workflow-coding-standards.md](./docs/08-workflow-coding-standards.md)
+- AI 활용: [docs/09-ai-strategy-prompts.md](./docs/09-ai-strategy-prompts.md)
+- 테스트/QA: [docs/10-test-qa-strategy.md](./docs/10-test-qa-strategy.md)
+- 배포/운영: [docs/11-deployment-cicd-operations.md](./docs/11-deployment-cicd-operations.md)
+- 회고/개선: [docs/12-retrospective-improvement.md](./docs/12-retrospective-improvement.md)
+- GitHub Wiki 원고: [docs/wiki/Home.md](./docs/wiki/Home.md)
 
 ## 현재 구현 범위
 

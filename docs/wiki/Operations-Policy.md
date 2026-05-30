@@ -18,4 +18,4 @@
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
   - `VITE_ADMIN_USER_ID`
-- 자세한 설정 위치는 [Deployment-Setup.md](/D:/Code305/GATTACA/docs/wiki/Deployment-Setup.md)에서 관리한다.
+- 자세한 설정 위치는 [Deployment-Setup](Deployment-Setup)에서 관리한다.

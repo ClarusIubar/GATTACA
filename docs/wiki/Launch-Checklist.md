@@ -18,4 +18,4 @@
 - [ ] 운영자 delete 확인
 - [ ] 메모리/코멘트 저장 확인
 
-자세한 절차는 [Deployment-Setup.md](/D:/Code305/GATTACA/docs/wiki/Deployment-Setup.md)와 [13-launch-checklist.md](/D:/Code305/GATTACA/docs/13-launch-checklist.md)를 따른다.
+자세한 절차는 [Deployment-Setup](Deployment-Setup)와 [docs/13-launch-checklist.md](https://github.com/ClarusIubar/GATTACA/blob/main/docs/13-launch-checklist.md)를 따른다.

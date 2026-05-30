@@ -11,7 +11,7 @@
 
 ## B. Supabase 연결 체크리스트
 - [ ] Supabase 프로젝트를 생성했다.
-- [ ] [docs/sql/supabase-schema.sql](/D:/Code305/GATTACA/docs/sql/supabase-schema.sql)을 실행했다.
+- [ ] [docs/sql/supabase-schema.sql](./sql/supabase-schema.sql)을 실행했다.
 - [ ] `memory-photos` public bucket을 생성했다.
 - [ ] RLS 정책이 활성화되어 있다.
 - [ ] `VITE_SUPABASE_URL` 값을 확인했다.

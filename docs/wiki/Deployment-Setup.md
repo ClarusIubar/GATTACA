@@ -46,7 +46,7 @@ VITE_ADMIN_USER_ID=...
 
 ### Supabase
 - SQL 스키마 실행
-  - [docs/sql/supabase-schema.sql](/D:/Code305/GATTACA/docs/sql/supabase-schema.sql)
+  - [docs/sql/supabase-schema.sql](https://github.com/ClarusIubar/GATTACA/blob/main/docs/sql/supabase-schema.sql)
 - `memory-photos` 버킷 생성
 - Authentication에서 Kakao provider 설정
 - RLS 정책 활성화 확인

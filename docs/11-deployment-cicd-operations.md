@@ -25,7 +25,7 @@
 4. 운영자 계정 로그인 후 `auth.users.id`를 `VITE_ADMIN_USER_ID`로 설정
 
 ## Supabase 운영 설정
-1. [docs/sql/supabase-schema.sql](/D:/Code305/GATTACA/docs/sql/supabase-schema.sql) 실행
+1. [docs/sql/supabase-schema.sql](./sql/supabase-schema.sql) 실행
 2. `memory-photos` public bucket 생성
 3. RLS 정책 활성화 확인
 4. `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_ADMIN_USER_ID`를 GitHub Secrets에 저장

@@ -3,12 +3,12 @@
 추억열차는 카카오톡 단체방에서 확정된 일정과 행사 후 추억을 기록하는 메모리얼 웹앱입니다.
 
 ## 빠른 링크
-- PRD: [PRD.md](/D:/Code305/GATTACA/docs/wiki/PRD.md)
-- 설계/아키텍처: [Architecture.md](/D:/Code305/GATTACA/docs/wiki/Architecture.md)
-- 개발기록: [Development-Log.md](/D:/Code305/GATTACA/docs/wiki/Development-Log.md)
-- 운영정책: [Operations-Policy.md](/D:/Code305/GATTACA/docs/wiki/Operations-Policy.md)
-- 배포/환경설정: [Deployment-Setup.md](/D:/Code305/GATTACA/docs/wiki/Deployment-Setup.md)
-- 런치 체크리스트: [Launch-Checklist.md](/D:/Code305/GATTACA/docs/wiki/Launch-Checklist.md)
+- PRD: [PRD](PRD)
+- 설계/아키텍처: [Architecture](Architecture)
+- 개발기록: [Development-Log](Development-Log)
+- 운영정책: [Operations-Policy](Operations-Policy)
+- 배포/환경설정: [Deployment-Setup](Deployment-Setup)
+- 런치 체크리스트: [Launch-Checklist](Launch-Checklist)
 
 ## 지금 바로 볼 수 있는 것
 - GitHub Pages에 현재 코드를 배포하면 기본형은 바로 볼 수 있습니다.
