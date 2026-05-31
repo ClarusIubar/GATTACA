@@ -1,10 +1,20 @@
+/**
+ * File: src/lib/app-context.tsx
+ * Purpose: 애플리케이션의 최상위 전역 상태(사용자 권한, 이벤트, 메모리, 댓글) 및 데이터 흐름을 제공하는 React Context Provider입니다.
+ * Primary Responsibility: UI 컴포넌트의 요청을 수신하여 활성 상태를 관리하고 비즈니스 규칙(작성자/운영자 권한 체크 등) 정책을 수행합니다.
+ * Design Intent: 
+ *   - 데이터 저장/조회 메커니즘을 MemoryTrainRepository 인터페이스 뒤로 캡슐화하여 데이터 액세스 방식 변화(Demo -> Supabase)가 비즈니스 로직에 무해하게 차단되도록 설계되었습니다.
+ *   - 비즈니스 권한 검증 규칙(getWriter, getAdmin 등)을 일관되게 적용하여 보안 및 오작동 가능성을 원천 배제합니다.
+ * Non-Goals: 데이터베이스 쿼리 및 SQL 데이터베이스 필드 번역은 수행하지 않으며, 이는 리포지토리 레이어에 위임합니다.
+ * Dependencies: react, @supabase/supabase-js, ./env, ./supabase, ./types, ./repository
+ */
+
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { appEnv, isSupabaseConfigured } from './env'
-import { initialDemoData } from './mock-data'
 import { supabase } from './supabase'
+import { DemoRepository, SupabaseRepository, type MemoryTrainRepository } from './repository'
 import type {
-  AppDataSnapshot,
   AuthMode,
   CommentInput,
   CommentRecord,
@@ -16,7 +26,6 @@ import type {
   UserProfile,
 } from './types'
 
-const DEMO_DATA_KEY = 'memory-train-demo-data'
 const DEMO_PERSONA_KEY = 'memory-train-demo-persona'
 
 interface AppContextValue {
@@ -55,23 +64,6 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null)
 
-function loadDemoData() {
-  const raw = localStorage.getItem(DEMO_DATA_KEY)
-  if (!raw) {
-    return initialDemoData
-  }
-
-  try {
-    return JSON.parse(raw) as AppDataSnapshot
-  } catch {
-    return initialDemoData
-  }
-}
-
-function saveDemoData(snapshot: AppDataSnapshot) {
-  localStorage.setItem(DEMO_DATA_KEY, JSON.stringify(snapshot))
-}
-
 function loadDemoPersona(): DemoPersona {
   const raw = localStorage.getItem(DEMO_PERSONA_KEY)
   if (raw === 'guest' || raw === 'pending' || raw === 'approved' || raw === 'admin') {
@@ -94,17 +86,10 @@ function getProfileFromMetadata(session: Session) {
   }
 }
 
-function makeId(prefix: string) {
-  return `${prefix}-${crypto.randomUUID()}`
-}
-
 export function AppProvider({ children }: PropsWithChildren) {
   const [authMode] = useState<AuthMode>(isSupabaseConfigured ? 'supabase' : 'demo')
   const [demoPersona, setDemoPersonaState] = useState<DemoPersona>(() =>
     isSupabaseConfigured ? 'guest' : loadDemoPersona(),
-  )
-  const [demoData, setDemoData] = useState<AppDataSnapshot>(() =>
-    isSupabaseConfigured ? initialDemoData : loadDemoData(),
   )
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [events, setEvents] = useState<EventRecord[]>([])
@@ -114,91 +99,101 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured)
   const [errorMessage, setErrorMessage] = useState('')
 
+  // 1. DIP: 저장소 인터페이스 주입 바인딩
+  const [repository] = useState<MemoryTrainRepository>(() =>
+    isSupabaseConfigured && supabase
+      ? new SupabaseRepository(supabase)
+      : new DemoRepository()
+  )
+
   function setDemoPersona(persona: DemoPersona) {
     setDemoPersonaState(persona)
     localStorage.setItem(DEMO_PERSONA_KEY, persona)
   }
 
-  function persistDemo(nextSnapshot: AppDataSnapshot) {
-    setDemoData(nextSnapshot)
-    saveDemoData(nextSnapshot)
-  }
-
-  const demoProfiles = demoData.profiles
-  const demoEvents = [...demoData.events].sort((left, right) => right.eventAt.localeCompare(left.eventAt))
-  const demoMemories = [...demoData.memories].sort((left, right) =>
-    right.recordedAt.localeCompare(left.recordedAt),
-  )
-  const demoComments = [...demoData.comments].sort((left, right) =>
-    left.createdAt.localeCompare(right.createdAt),
-  )
   const demoCurrentUser =
     demoPersona === 'guest'
       ? null
-      : demoProfiles.find((profile) => profile.id === `profile-${demoPersona}`) ?? null
+      : profiles.find(
+          (profile) =>
+            profile.id === `profile-${demoPersona === 'approved' ? 'member' : demoPersona}`
+        ) ?? null
 
-  const resolvedProfiles = authMode === 'demo' ? demoProfiles : profiles
-  const resolvedEvents = authMode === 'demo' ? demoEvents : events
-  const resolvedMemories = authMode === 'demo' ? demoMemories : memories
-  const resolvedComments = authMode === 'demo' ? demoComments : comments
   const resolvedCurrentUser = authMode === 'demo' ? demoCurrentUser : supabaseCurrentUser
   const isApproved = resolvedCurrentUser?.approvalStatus === 'approved'
   const isAdmin = resolvedCurrentUser?.role === 'admin'
 
   useEffect(() => {
-    if (authMode === 'demo') {
-      return
-    }
-
     let disposed = false
     let unsubscribe = () => {}
 
-    async function bootstrapSupabase() {
-      if (!supabase) {
-        setIsLoading(false)
-        return
-      }
-
+    async function bootstrap() {
       setIsLoading(true)
       setErrorMessage('')
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      try {
+        if (authMode === 'demo') {
+          await fetchRemoteData(null)
+          setIsLoading(false)
+          return
+        }
 
-      if (session) {
-        await ensureProfile(session)
-      } else if (!disposed) {
-        setSupabaseCurrentUser(null)
-      }
+        if (!supabase) {
+          setIsLoading(false)
+          return
+        }
 
-      await fetchRemoteData(session)
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
 
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-        void (async () => {
-          setIsLoading(true)
-          if (nextSession) {
-            await ensureProfile(nextSession)
-          } else {
-            setSupabaseCurrentUser(null)
-          }
-          await fetchRemoteData(nextSession)
-        })()
-      })
+        if (session) {
+          await ensureProfile(session)
+        } else if (!disposed) {
+          setSupabaseCurrentUser(null)
+        }
 
-      unsubscribe = () => {
-        subscription.unsubscribe()
+        await fetchRemoteData(session)
+
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+          void (async () => {
+            setIsLoading(true)
+            if (nextSession) {
+              await ensureProfile(nextSession)
+            } else {
+              setSupabaseCurrentUser(null)
+            }
+            await fetchRemoteData(nextSession)
+          })()
+        })
+
+        unsubscribe = () => {
+          subscription.unsubscribe()
+        }
+      } catch (error) {
+        if (!disposed) {
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : '초기화 작업 중 문제가 발생했습니다.',
+          )
+        }
+      } finally {
+        if (!disposed) {
+          setIsLoading(false)
+        }
       }
     }
 
-    void bootstrapSupabase()
+    void bootstrap()
 
     return () => {
       disposed = true
       unsubscribe()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authMode])
 
   async function ensureProfile(session: Session) {
@@ -256,83 +251,32 @@ export function AppProvider({ children }: PropsWithChildren) {
   }
 
   async function fetchRemoteData(session: Session | null) {
-    if (!supabase) {
-      return
-    }
-
     try {
-      const [profilesResult, eventsResult, memoriesResult, commentsResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('id, auth_user_id, kakao_nickname, avatar_url, approval_status, role')
-          .order('kakao_nickname'),
-        supabase.from('events').select('*').order('event_at', { ascending: false }),
-        supabase.from('memories').select('*').order('recorded_at', { ascending: false }),
-        supabase.from('comments').select('*').order('created_at', { ascending: true }),
+      const [nextProfiles, nextEvents, nextMemories, nextComments] = await Promise.all([
+        repository.fetchProfiles(),
+        repository.fetchEvents(),
+        repository.fetchMemories(),
+        repository.fetchComments(),
       ])
 
-      if (profilesResult.error || eventsResult.error || memoriesResult.error || commentsResult.error) {
-        throw (
-          profilesResult.error ??
-          eventsResult.error ??
-          memoriesResult.error ??
-          commentsResult.error
-        )
-      }
-
-      const nextProfiles = (profilesResult.data ?? []).map((profile) => ({
-        id: profile.id as string,
-        authUserId: profile.auth_user_id as string,
-        kakaoNickname: profile.kakao_nickname as string,
-        avatarUrl: (profile.avatar_url as string | null) ?? '',
-        approvalStatus: profile.approval_status as UserProfile['approvalStatus'],
-        role: profile.role as UserProfile['role'],
-      }))
-
       setProfiles(nextProfiles)
-      setEvents(
-        (eventsResult.data ?? []).map((event) => ({
-          id: event.id as string,
-          title: event.title as string,
-          eventAt: event.event_at as string,
-          location: event.location as string,
-          what: event.what as string,
-          how: event.how as string,
-          decisionSummary: event.decision_summary as string,
-          createdBy: event.created_by as string,
-        })),
-      )
-      setMemories(
-        (memoriesResult.data ?? []).map((memory) => ({
-          id: memory.id as string,
-          eventId: memory.event_id as string,
-          authorId: memory.author_id as string,
-          photoUrl: memory.photo_url as string,
-          caption: memory.caption as string,
-          recordedAt: memory.recorded_at as string,
-        })),
-      )
-      setComments(
-        (commentsResult.data ?? []).map((comment) => ({
-          id: comment.id as string,
-          memoryId: comment.memory_id as string,
-          authorId: comment.author_id as string,
-          content: comment.content as string,
-          createdAt: comment.created_at as string,
-        })),
-      )
+      setEvents(nextEvents)
+      setMemories(nextMemories)
+      setComments(nextComments)
 
-      if (!session) {
-        setSupabaseCurrentUser(null)
-      } else {
-        const nextUser = nextProfiles.find((profile) => profile.authUserId === session.user.id) ?? null
-        setSupabaseCurrentUser(nextUser)
+      if (authMode === 'supabase') {
+        if (!session) {
+          setSupabaseCurrentUser(null)
+        } else {
+          const nextUser = nextProfiles.find((profile) => profile.authUserId === session.user.id) ?? null
+          setSupabaseCurrentUser(nextUser)
+        }
       }
     } catch (error) {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Supabase 데이터를 불러오는 중 오류가 발생했습니다.',
+          : '데이터를 불러오는 중 오류가 발생했습니다.',
       )
     } finally {
       setIsLoading(false)
@@ -340,16 +284,10 @@ export function AppProvider({ children }: PropsWithChildren) {
   }
 
   async function refreshData() {
-    if (authMode === 'demo') {
-      return
-    }
-
-    if (supabase) {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      await fetchRemoteData(session)
-    }
+    const session = supabase && authMode === 'supabase'
+      ? (await supabase.auth.getSession()).data.session
+      : null
+    await fetchRemoteData(session)
   }
 
   function getWriter() {
@@ -368,39 +306,13 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   async function createEvent(input: EventInput) {
     const writer = getWriter()
-
-    if (authMode === 'demo') {
-      persistDemo({
-        ...demoData,
-        events: [{ id: makeId('event'), createdBy: writer.id, ...input }, ...demoData.events],
-      })
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase.from('events').insert({
-      title: input.title,
-      event_at: input.eventAt,
-      location: input.location,
-      what: input.what,
-      how: input.how,
-      decision_summary: input.decisionSummary,
-      created_by: writer.id,
-    })
-
-    if (error) {
-      throw error
-    }
-
+    await repository.createEvent(input, writer.id)
     await refreshData()
   }
 
   async function updateEvent(eventId: string, input: EventInput) {
     const writer = getWriter()
-    const target = resolvedEvents.find((event) => event.id === eventId)
+    const target = events.find((event) => event.id === eventId)
     if (!target) {
       return
     }
@@ -409,63 +321,13 @@ export function AppProvider({ children }: PropsWithChildren) {
       throw new Error('작성자 또는 운영자만 수정할 수 있습니다.')
     }
 
-    if (authMode === 'demo') {
-      persistDemo({
-        ...demoData,
-        events: demoData.events.map((event) => (event.id === eventId ? { ...event, ...input } : event)),
-      })
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase
-      .from('events')
-      .update({
-        title: input.title,
-        event_at: input.eventAt,
-        location: input.location,
-        what: input.what,
-        how: input.how,
-        decision_summary: input.decisionSummary,
-      })
-      .eq('id', eventId)
-
-    if (error) {
-      throw error
-    }
-
+    await repository.updateEvent(eventId, input)
     await refreshData()
   }
 
   async function deleteEvent(eventId: string) {
     getAdmin()
-
-    if (authMode === 'demo') {
-      const memoryIds = demoData.memories
-        .filter((memory) => memory.eventId === eventId)
-        .map((memory) => memory.id)
-
-      persistDemo({
-        profiles: demoData.profiles,
-        events: demoData.events.filter((event) => event.id !== eventId),
-        memories: demoData.memories.filter((memory) => memory.eventId !== eventId),
-        comments: demoData.comments.filter((comment) => !memoryIds.includes(comment.memoryId)),
-      })
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase.from('events').delete().eq('id', eventId)
-    if (error) {
-      throw error
-    }
-
+    await repository.deleteEvent(eventId)
     await refreshData()
   }
 
@@ -498,34 +360,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   async function createMemory(input: MemoryInput, photoFile: File | null, photoUrl: string) {
     const writer = getWriter()
     const resolvedPhotoUrl = await resolvePhotoUrl(photoFile, photoUrl)
-
-    if (authMode === 'demo') {
-      persistDemo({
-        ...demoData,
-        memories: [
-          { id: makeId('memory'), authorId: writer.id, photoUrl: resolvedPhotoUrl, ...input },
-          ...demoData.memories,
-        ],
-      })
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase.from('memories').insert({
-      event_id: input.eventId,
-      author_id: writer.id,
-      photo_url: resolvedPhotoUrl,
-      caption: input.caption,
-      recorded_at: input.recordedAt,
-    })
-
-    if (error) {
-      throw error
-    }
-
+    await repository.createMemory(input, resolvedPhotoUrl, writer.id)
     await refreshData()
   }
 
@@ -536,7 +371,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     photoUrl: string,
   ) {
     const writer = getWriter()
-    const target = resolvedMemories.find((memory) => memory.id === memoryId)
+    const target = memories.find((memory) => memory.id === memoryId)
     if (!target) {
       return
     }
@@ -546,103 +381,25 @@ export function AppProvider({ children }: PropsWithChildren) {
     }
 
     const resolvedPhotoUrl = await resolvePhotoUrl(photoFile, photoUrl || target.photoUrl)
-
-    if (authMode === 'demo') {
-      persistDemo({
-        ...demoData,
-        memories: demoData.memories.map((memory) =>
-          memory.id === memoryId ? { ...memory, ...input, photoUrl: resolvedPhotoUrl } : memory,
-        ),
-      })
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase
-      .from('memories')
-      .update({
-        event_id: input.eventId,
-        caption: input.caption,
-        recorded_at: input.recordedAt,
-        photo_url: resolvedPhotoUrl,
-      })
-      .eq('id', memoryId)
-
-    if (error) {
-      throw error
-    }
-
+    await repository.updateMemory(memoryId, input, resolvedPhotoUrl)
     await refreshData()
   }
 
   async function deleteMemory(memoryId: string) {
     getAdmin()
-
-    if (authMode === 'demo') {
-      persistDemo({
-        profiles: demoData.profiles,
-        events: demoData.events,
-        memories: demoData.memories.filter((memory) => memory.id !== memoryId),
-        comments: demoData.comments.filter((comment) => comment.memoryId !== memoryId),
-      })
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase.from('memories').delete().eq('id', memoryId)
-    if (error) {
-      throw error
-    }
-
+    await repository.deleteMemory(memoryId)
     await refreshData()
   }
 
   async function createComment(input: CommentInput) {
     const writer = getWriter()
-
-    if (authMode === 'demo') {
-      persistDemo({
-        ...demoData,
-        comments: [
-          ...demoData.comments,
-          {
-            id: makeId('comment'),
-            memoryId: input.memoryId,
-            authorId: writer.id,
-            content: input.content,
-            createdAt: new Date().toISOString().slice(0, 16),
-          },
-        ],
-      })
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase.from('comments').insert({
-      memory_id: input.memoryId,
-      author_id: writer.id,
-      content: input.content,
-    })
-
-    if (error) {
-      throw error
-    }
-
+    await repository.createComment(input, writer.id)
     await refreshData()
   }
 
   async function updateComment(commentId: string, input: CommentInput) {
     const writer = getWriter()
-    const target = resolvedComments.find((comment) => comment.id === commentId)
+    const target = comments.find((comment) => comment.id === commentId)
     if (!target) {
       return
     }
@@ -651,81 +408,19 @@ export function AppProvider({ children }: PropsWithChildren) {
       throw new Error('작성자 또는 운영자만 수정할 수 있습니다.')
     }
 
-    if (authMode === 'demo') {
-      persistDemo({
-        ...demoData,
-        comments: demoData.comments.map((comment) =>
-          comment.id === commentId ? { ...comment, content: input.content } : comment,
-        ),
-      })
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase
-      .from('comments')
-      .update({ content: input.content })
-      .eq('id', commentId)
-
-    if (error) {
-      throw error
-    }
-
+    await repository.updateComment(commentId, input)
     await refreshData()
   }
 
   async function deleteComment(commentId: string) {
     getAdmin()
-
-    if (authMode === 'demo') {
-      persistDemo({
-        ...demoData,
-        comments: demoData.comments.filter((comment) => comment.id !== commentId),
-      })
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase.from('comments').delete().eq('id', commentId)
-    if (error) {
-      throw error
-    }
-
+    await repository.deleteComment(commentId)
     await refreshData()
   }
 
   async function updateProfileApproval(profileId: string, status: UserProfile['approvalStatus']) {
     getAdmin()
-
-    if (authMode === 'demo') {
-      persistDemo({
-        ...demoData,
-        profiles: demoData.profiles.map((profile) =>
-          profile.id === profileId ? { ...profile, approvalStatus: status } : profile,
-        ),
-      })
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ approval_status: status })
-      .eq('id', profileId)
-
-    if (error) {
-      throw error
-    }
-
+    await repository.updateProfileApproval(profileId, status)
     await refreshData()
   }
 
@@ -764,10 +459,10 @@ export function AppProvider({ children }: PropsWithChildren) {
     errorMessage,
     currentUser: resolvedCurrentUser,
     demoPersona,
-    events: resolvedEvents,
-    memories: resolvedMemories,
-    comments: resolvedComments,
-    profiles: resolvedProfiles,
+    events,
+    memories,
+    comments,
+    profiles,
     isApproved,
     isAdmin,
     setDemoPersona,
