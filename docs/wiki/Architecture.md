@@ -19,8 +19,8 @@ graph TD
     end
 
     subgraph Storage_Layer [Storage Engine Layer]
-        IRepo <|.. DemoRepo[DemoRepository Concrete]
-        IRepo <|.. SupabaseRepo[SupabaseRepository Concrete]
+        DemoRepo[DemoRepository Concrete] -.->|Implements| IRepo
+        SupabaseRepo[SupabaseRepository Concrete] -.->|Implements| IRepo
         DemoRepo -->|Sync| LS[(LocalStorage / Memory)]
         SupabaseRepo -->|Fetch| SB[(Supabase BaaS / PostgreSQL)]
     end
