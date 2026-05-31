@@ -1,73 +1,82 @@
-# 배포 / 환경설정
+# 배포 / 환경설정 (Deployment & Environment Configuration)
 
-## 1. GitHub Pages에서 기본형 바로 보기
-- 가능합니다.
-- 현재 프로젝트는 환경변수가 없어도 빌드되며, 이 경우 `데모 모드`로 렌더링됩니다.
-- 즉, 저장소에 푸시하고 GitHub Pages를 활성화하면 먼저 정적 기본형부터 확인할 수 있습니다.
+본 문서는 `추억열차 (GATTACA)` 서비스의 로컬 개발 환경 구성, 클라우드 서버리스 인프라 배포 및 환경 변수 주입 방법을 단계별로 명시합니다.
 
-## 2. GitHub Pages 배포 조건
-- 저장소의 GitHub Actions가 실행되어야 합니다.
-- 저장소 Settings > Pages에서 GitHub Actions 기반 배포를 사용해야 합니다.
-- `main` 브랜치에 푸시하면 워크플로우가 빌드와 배포를 수행합니다.
+---
 
-## 3. 실사용에 필요한 공개 환경변수
-- 프론트엔드 환경변수:
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_ANON_KEY`
-  - `VITE_ADMIN_USER_ID`
+## 1. 💻 로컬 개발 환경 세팅 (Local Setup)
 
-## 4. 각 값의 의미
-- `VITE_SUPABASE_URL`
-  - Supabase 프로젝트 URL
-- `VITE_SUPABASE_ANON_KEY`
-  - Supabase 프론트엔드용 anon key
-- `VITE_ADMIN_USER_ID`
-  - 운영자 1인의 Supabase Auth User ID
-  - 이 값과 로그인 사용자의 `auth.users.id`가 일치하면 운영자 권한을 가집니다.
+로컬 머신에서 프로젝트를 클론하고 개발 서버를 즉시 구동하는 방법입니다.
 
-## 5. 어디에 넣어야 하는가
+1. **저장소 클론 및 패키지 설치**:
+   ```bash
+   git clone https://github.com/ClarusIubar/GATTACA.git
+   cd GATTACA
+   npm install
+   ```
+2. **로컬 개발 서버 실행**:
+   ```bash
+   npm run dev
+   ```
+   - 브라우저에서 `http://localhost:5173` 으로 접속합니다.
+   - 로컬에 `.env.local` 파일이 없더라도 앱은 **자동으로 데모 모드(Demo Mode)**로 전환되어 전체 구조와 라우팅을 100% 정상 열람할 수 있습니다.
+3. **로컬 테스트 스위트 실행**:
+   ```bash
+   # 전체 5단계 TDD 테스트 스위트 일회성 구동
+   npx vitest run
 
-### 로컬 개발
-- `.env.local` 파일에 아래처럼 넣습니다.
+   # 실시간 코드 변경 감지 테스트 (Watch Mode)
+   npm run test
+   ```
 
-```bash
-VITE_SUPABASE_URL=...
-VITE_SUPABASE_ANON_KEY=...
-VITE_ADMIN_USER_ID=...
-```
+---
 
-### GitHub Actions / GitHub Pages
-- 저장소 Settings > Secrets and variables > Actions 에 아래 3개를 등록합니다.
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_ANON_KEY`
-  - `VITE_ADMIN_USER_ID`
+## 2. 🌐 Cloudflare Pages를 통한 프론트엔드 배포
 
-## 6. 추가로 필요한 외부 설정
+최종 사용자에게 배포하는 고성능 정적 Pages 배포 사양입니다.
 
-### Supabase
-- SQL 스키마 실행
-  - [docs/sql/supabase-schema.sql](https://github.com/ClarusIubar/GATTACA/blob/main/docs/sql/supabase-schema.sql)
-- `memory-photos` 버킷 생성
-- Authentication에서 Kakao provider 설정
-- RLS 정책 활성화 확인
+1. Cloudflare 대시보드 ➡️ **[Workers & Pages]** ➡️ **[Pages]** ➡️ **[Connect to Git]** 클릭.
+2. `GATTACA` GitHub 저장소를 선택하고 아래 빌드 사양을 대입합니다:
+   - **Framework preset**: `Vite`
+   - **Build command**: `npm run build`
+   - **Build output directory**: `dist`
+3. **[Build Environment Variables]**에 다음 환경 변수들을 바인딩합니다:
+   - `VITE_SUPABASE_URL` : Supabase 프로젝트 URL 주소
+   - `VITE_SUPABASE_ANON_KEY` : Supabase Anon 퍼블릭 키
+   - `VITE_ADMIN_USER_ID` : 운영자 1인의 고유 ID 문자열
+   - `VITE_API_BASE_URL` : 백엔드 Worker 도메인 주소 (`https://gattaca-backend.your-subdomain.workers.dev`)
 
-### Kakao Developers
-- 앱 생성
-- Supabase Auth callback URL을 Redirect URI로 등록
+> [!NOTE]
+> SPA 라우팅의 새로고침 404 오류 방지를 위해 `public/_redirects` 파일이 정상 배포본에 바인딩되어 있으며 자동으로 Cloudflare Edge 서버가 200 리디렉션을 제어합니다.
 
-## 7. 키 없이 가능한 것 / 불가능한 것
+---
 
-### 가능한 것
-- 홈, 소개, 이벤트 목록, 상세 화면 기본형 확인
-- 데모 데이터 기반 UI 점검
-- 데모 권한 전환으로 게스트/승인대기/승인회원/운영자 흐름 확인
+## 3. ⚡ Cloudflare Workers를 통한 백엔드 API Gateway 배포
 
-### 불가능한 것
-- 실제 Kakao 로그인
-- 실제 이벤트/메모리/코멘트 저장
-- 운영자 승인/삭제의 서버 반영
+카카오 API 비밀 키 은닉 및 Supabase 어드민 권한 처리를 프록시하는 Worker 백엔드 배포 가이드입니다.
 
-## 8. 권장 순서
-1. 먼저 GitHub Pages에 배포해 기본형을 본다.
-2. 그다음 Supabase와 Kakao를 연결한다.
-3. 마지막으로 운영자 ID를 넣어 승인/삭제까지 실사용 검증한다.
+1. **Wrangler CLI 설정**:
+   - `wrangler.toml` 환경 구성 파일을 루트에 배치하고, Node.js 서버리스 배포 코드를 확인합니다.
+2. **API 배포 실행**:
+   ```bash
+   # wrangler CLI를 사용해 엣지 서버리스 배포 단일 집행
+   npx wrangler deploy
+   ```
+3. **보안 시크릿 키 주입 (Secrets)**:
+   API 마스터 비밀번호 등급의 키들은 다음 wrangler 명령어로 Workers 보안 비밀 컨테이너에 주입하여 환경변수로 활용합니다:
+   ```bash
+   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+   npx wrangler secret put KAKAO_CLIENT_SECRET
+   ```
+
+---
+
+## 🔒 4. 보안 시크릿 키(Secret Keys) 초정밀 가이드링크
+
+본 프로젝트는 보안 무결성 확보를 위해 배포 자격 토큰 및 데이터베이스/서드파티 비밀 키 관리를 엄격히 통제합니다.
+
+- Cloudflare API Token 발급 방법
+- GitHub Actions Secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) 바인딩 방법
+- Supabase `service_role` 및 Kakao `Client Secret` 발급 후 Worker에 Secrets 주입하는 방법
+
+위 핵심 보안 세팅의 모든 메뉴별 클릭 경로와 초정밀 가이드는 **[Infrastructure-Specification (인프라 사양 및 연동 가이드)](Infrastructure-Specification)** 위키 문서에 그림을 보듯 상세히 기재되어 있으므로 반드시 참고하여 설정을 마무리하십시오.
