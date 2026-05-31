@@ -41,6 +41,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_ADMIN_USER_ID: ${{ secrets.VITE_ADMIN_USER_ID }}
+          VITE_CLOUDFLARE_API_URL: ${{ secrets.VITE_CLOUDFLARE_API_URL }}
         run: npm run build
 
       - name: Setup Pages

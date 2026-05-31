@@ -1,6 +1,10 @@
 # 개발기록
 
 ## 2026-05-31
+- **Cloudflare Pages CI/CD 통합 배포 파이프라인 수립 및 보안 경계 최신화 (TSK-001-09)**:
+  - GitHub Actions 워크플로우(`deploy.yml`)의 빌드 단계(`npm run build`)에 `VITE_CLOUDFLARE_API_URL` 빌드 타임 환경 변수 자동 주입 코드 연동 완료.
+  - 사용자가 GitHub Secrets에 Cloudflare 배포 토큰 및 계정 식별 키(`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`)와 API 엔드포인트 환경 변수를 통합 탑재함에 따라, 로컬 환경 수동 기재를 전면 배제한 원스톱 빌드 및 배포 무인화 구축.
+  - `docs/wiki/Infrastructure-Specification.md` 위키에 통합 배포 아키텍처적 경계를 반영 개정 완료: 단일 신뢰 원천(Single Source of Truth) 기반의 CI/CD 통합 보안 경계로 아키텍처적 명세 최신화.
 - **Cloudflare Native 데이터스토어 생태계(D1, R2, KV) 수평 마이그레이션 및 DIP 격리 실증 완료 (TSK-001-08)**:
   - 외부 BaaS 의존성인 Supabase 대신 Cloudflare Pages Functions(Workers) 에지 백엔드 Native 스택으로 전격 이전.
   - `MemoryTrainRepository` 인터페이스 규격을 100% 준수하는 `CloudflareRepository` 구체 클래스를 `repository.ts` 하위에 완벽히 구현하여 DIP(의존성 역전 원칙)의 결합 격리 설계 가치를 엄밀히 입증.
