@@ -196,7 +196,7 @@ CREATE POLICY "Allow approved members insert comments" ON public.comments
 ### 3.1 Cloudflare Pages (프론트엔드 React SPA 배포)
 Vite 기반 React 프론트엔드 소스 코드를 글로벌 Edge CDN에 배포하는 순서입니다.
 
-1. Cloudflare 대시보드 로그인 ➡️ **[Workers & Pages]** ➡️ **[Pages]** ➡️ **[Connect to Git]** 클릭.
+1. Cloudflare 대시보드 로그인 ➡️ **[Workers & Pages]** ➡️ **[Pages]** ➡️ **[Create a project]** ➡️ **[Connect to Git]** 클릭.
 2. GATTACA GitHub 레포지토리를 연결하고 빌드 세팅을 다음과 같이 적용합니다:
    - **Framework preset**: `Vite`
    - **Build command**: `npm run build`
@@ -335,3 +335,50 @@ npx wrangler secret put KAKAO_CLIENT_SECRET
 1. Kakao Developers ➡️ [내 애플리케이션] ➡️ [카카오 로그인] ➡️ [보안]으로 진입합니다.
 2. **[Client Secret]** 영역 우측 하단의 **[재발급]** 버튼을 클릭합니다.
 3. 생성된 신규 비밀코드를 즉시 복사하여 Cloudflare Workers Secrets의 `KAKAO_CLIENT_SECRET` 값을 업데이트하고 저장 및 재배포합니다.
+
+---
+
+## 🛡️ 6. 보안 및 배포의 아키텍처적 경계 명세 (Security & Deployment Boundary)
+
+본 장은 **"왜 어떤 값은 Pages에 들어가고, 어떤 값은 Workers에 들어가며, 깃허브 시크릿은 어떤 역할을 전담하는가?"**에 대한 시스템 아키텍처적 경계선과 격리 설계를 명확히 규정합니다.
+
+```mermaid
+flowchart TD
+    subgraph CI_CD_Pipeline [GitHub Actions Build Side]
+        GH_Secret[GitHub Actions Secrets] -->|Authorizes| CF_API[Cloudflare API Gate]
+        CF_API -->|Triggers Build| Pages_Build[Build Pages Assets]
+        CF_API -->|Deploys| Worker_Build[Deploy Worker Script]
+    end
+
+    subgraph Client_Side [Client Side: Browser / Cloudflare Pages]
+        Pages_Env[Public Env: Anon Key, Project URL] -->|Inlined in Bundle| Pages_Run[React Client SPA Run]
+    end
+
+    subgraph Server_Side [Server Side: Edge Runtime / Cloudflare Workers]
+        Worker_Env[Secure Secrets: Service Role Key, Kakao Secret] -->|Encrypted Locked| Worker_Run[Node CORS API Gateway]
+    end
+
+    Pages_Run -->|1. Public API Calls| SB_Public[(Supabase Public API)]
+    Pages_Run -->|2. Secure OAuth/Admin Requests| Worker_Run
+    Worker_Run -->|3. Overpasses RLS & Modifies Grade| SB_Admin[(Supabase Private DB)]
+
+    style GH_Secret fill:#ffcc80,stroke:#f57c00,stroke-width:2px
+    style Pages_Env fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    style Worker_Env fill:#ef9a9a,stroke:#d32f2f,stroke-width:2px
+```
+
+### 6.1 런타임 보안 경계 (왜 Pages와 Workers의 변수를 분리하는가?)
+- **클라이언트 사이드 (Cloudflare Pages)**: 
+  - React SPA 코드는 브라우저(User's Device)로 통째로 내려가서 실행됩니다. `VITE_SUPABASE_URL` 및 `VITE_SUPABASE_ANON_KEY`와 같은 변수는 빌드 컴파일 시점에 자바스크립트 텍스트 번들에 그대로 **인라이닝(Inlining)**되어 박제됩니다.
+  - 즉, 사용자가 개발자 도구(F12)나 소스코드 네트워크 탭만 열어도 즉시 이 값을 추출해낼 수 있습니다. 따라서 노출되어도 RLS 정책에 의해 안전한 **퍼블릭 정보(Public Keys/Anon Keys)**만 Pages에 격리 주입합니다.
+- **서버 사이드 (Cloudflare Workers)**:
+  - 브라우저에 노출되는 순간 데이터베이스 전체 통제권을 상실하는 **초민감 마스터 키(`SUPABASE_SERVICE_ROLE_KEY`, `KAKAO_CLIENT_SECRET`)**는 브라우저로 단 1바이트도 유출되어서는 안 됩니다.
+  - 이 값들은 오직 Cloudflare의 서버리스 Edge 컨테이너 내부 환경변수에만 **비공개 암호화 락다운(Secrets Lock)** 처리되어 탑재되며, Workers 백엔드 서버 로직 내부에서만 실행 후 휘발되므로 클라이언트 사이드로의 유출이 100% 원천 차단됩니다.
+
+### 6.2 배포 인증 경계 (왜 깃허브 시크릿을 비즈니스 런타임에 직접 쓰지 않는가?)
+- **빌드/배포 인증 전용 (GitHub Actions Secrets)**:
+  - GitHub Repository Secrets에 주입된 `CLOUDFLARE_API_TOKEN`과 `Account ID`는 오직 **"배포 러너(Runner)가 배포 서버에 진입하기 위한 패스포트(Passport)"** 역할만 수행합니다.
+  - 이 키는 개발된 결과물(React Assets, Worker js)을 배포 서비스로 밀어 넣을 때의 **인프라 호출용 키**일 뿐이며, 비즈니스 로직(카카오 API 핑, DB 인서트)과는 무관합니다.
+- **런타임 컨테이너 환경변수 주입의 물리적 한계**:
+  - GitHub Secrets에 비즈니스 시크릿 키(`SUPABASE_SERVICE_ROLE_KEY` 등)를 아무리 등록해 두어도, 런타임에 서버리스 환경에서 실행되는 Cloudflare Workers 컨테이너가 해당 변수를 참조하게 만들 수 없습니다. Workers 컨테이너가 구동될 때 런타임 변수를 바인딩해줄 수 있는 주체는 오직 Cloudflare 인프라뿐이기 때문입니다.
+  - 따라서, 비즈니스 민감 키는 **Cloudflare Workers Settings Secrets**에 직접 주입하여 런타임에 서버 엔진이 컨테이너 환경변수(`env.SUPABASE_SERVICE_ROLE_KEY`)로 바로 퍼올려 쓸 수 있도록 설계 경계를 명확히 이원화합니다.
