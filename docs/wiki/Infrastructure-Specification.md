@@ -26,6 +26,9 @@
    - **프로필 정보(닉네임/프로필 사진)**: 필수 동의 (가입 시 닉네임 표기용)
    - **카카오계정(이메일)**: 선택 동의 (고유 식별자 또는 연락용)
 
+> [!TIP]
+> **다중 환경 연동 가이드**: 카카오 Developers는 다수의 Redirect URI 등록을 무제한 지원합니다. 로컬 호스트 주소와 배포 도메인 주소를 한곳에 동시에 등록해 두면, 빌드 시점의 `VITE_API_BASE_URL` 환경 변수 스위칭만으로 환경 간 완벽한 로그인 연동 교차가 가능합니다.
+
 ### 1.3 로그인 및 토큰 교환 시퀀스 (REST API)
 사용자가 `로그인` 버튼을 누르면 다음 흐름이 발생합니다:
 
@@ -193,7 +196,7 @@ CREATE POLICY "Allow approved members insert comments" ON public.comments
 ### 3.1 Cloudflare Pages (프론트엔드 React SPA 배포)
 Vite 기반 React 프론트엔드 소스 코드를 글로벌 Edge CDN에 배포하는 순서입니다.
 
-1. Cloudflare 대시보드 로그인 ➡️ **[Workers & Pages]** ➡️ **[Pages]** ➡️ **[Create a project]** ➡️ **[Connect to Git]** 클릭.
+1. Cloudflare 대시보드 로그인 ➡️ **[Workers & Pages]** ➡️ **[Pages]** ➡️ **[Connect to Git]** 클릭.
 2. GATTACA GitHub 레포지토리를 연결하고 빌드 세팅을 다음과 같이 적용합니다:
    - **Framework preset**: `Vite`
    - **Build command**: `npm run build`
@@ -223,6 +226,12 @@ compatibility_date = "2026-05-31"
 [vars]
 SUPABASE_URL = "https://your-supabase-project.supabase.co"
 ```
+
+> [!WARNING]
+> **Cloudflare Workers V8 Edge Runtime (호환성 주의사항)**: Cloudflare Workers는 Node.js 풀 런타임이 아닌 V8 샌드박스 엣지 환경에서 구동됩니다. Supabase JS SDK 연결 시 Node.js 전용 모듈(`fs`, `net` 등)이 호출되지 않도록 `wrangler.toml`에 아래의 호환성 플래그를 추가해야 비동기 페치 에러가 방지됩니다:
+> ```toml
+> compatibility_flags = [ "nodejs_compat" ]
+> ```
 
 ---
 
@@ -312,4 +321,17 @@ npx wrangler secret put KAKAO_CLIENT_SECRET
 
 ---
 
-이와 같이 GitHub Action용 `CLOUDFLARE_API_TOKEN`과 `Account ID`, 그리고 Workers 백엔드용 `SUPABASE_SERVICE_ROLE_KEY`와 `KAKAO_CLIENT_SECRET`을 완전히 바인딩해 두면, 누설 걱정이 없는 강력한 Edge 보안 아키텍처 배포망이 완벽히 활성화됩니다.
+## 5. 🔄 비밀키 만료 로테이션 & 보안 침해 복구 매뉴얼
+
+비밀 키 노출 또는 정기적인 보안 만료(Rotation) 시 신속하게 키를 리셋하고 안전하게 서비스를 복원하는 비상 대응 절차입니다.
+
+### 5.1 Supabase `service_role` 로테이션
+1. Supabase Dashboard ➡️ [Project Settings] ➡️ [API]로 진입합니다.
+2. **[JWT Settings]** 섹션 하단의 **[Generate a new JWT Secret]**을 클릭하여 시스템 JWT 마스터 시크릿을 재발급합니다. *(이 작업 즉시 기존의 모든 service_role key 및 anon key가 실시간으로 만료 처리되며 이전 토큰 통신이 전부 차단됩니다.)*
+3. 새로 생성되어 표시되는 `service_role` 키를 안전하게 복사합니다.
+4. 즉시 위의 4.3-[C] 단계를 참고하여 Cloudflare Workers Secrets의 `SUPABASE_SERVICE_ROLE_KEY` 값을 신규 키로 업데이트하고 재배포합니다.
+
+### 5.2 카카오 `Client Secret` 로테이션
+1. Kakao Developers ➡️ [내 애플리케이션] ➡️ [카카오 로그인] ➡️ [보안]으로 진입합니다.
+2. **[Client Secret]** 영역 우측 하단의 **[재발급]** 버튼을 클릭합니다.
+3. 생성된 신규 비밀코드를 즉시 복사하여 Cloudflare Workers Secrets의 `KAKAO_CLIENT_SECRET` 값을 업데이트하고 저장 및 재배포합니다.

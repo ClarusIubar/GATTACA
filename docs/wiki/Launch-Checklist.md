@@ -39,4 +39,36 @@
 
 ---
 
+## 🚨 5. 배포 장애 극복 및 비상 롤백 프로토콜 (Emergency Rollback Plan)
+
+프로덕션 릴리즈 및 스키마 반영 과정에서 심각한 오류가 발생했을 때 즉각적이고 무중단 수준으로 서비스를 원상 복구하기 위한 롤백 절차입니다.
+
+### [A] 프론트엔드 배포 실패 시 1클릭 롤백 (Cloudflare Pages)
+1. Cloudflare Dashboard ➡️ **[Workers & Pages]** ➡️ **[Pages]** ➡️ `GATTACA` 프로젝트를 선택합니다.
+2. **[Deployments]** (배포 이력) 탭으로 이동합니다.
+3. 리스트에 나열된 배포 버전 중, 이번 배포 직전의 **가장 최근 성공한 배포 버전**을 찾아 우측의 **[...]** 버튼을 클릭합니다.
+4. **[Rollback to this deployment]** (이 배포 버전으로 롤백) 메뉴를 클릭하고 확인을 선택합니다.
+5. **결과**: 단 5초 이내에 글로벌 Edge CDN 캐시가 이전 버전으로 지시 및 강제 매핑되어, 서버 중단이나 유저 리포트 폭증 없이 안전하게 원복 완료됩니다.
+
+### [B] DB 스키마 마이그레이션 실패 시 스키마 롤백 (Supabase SQL)
+1. Supabase Dashboard ➡️ **[SQL Editor]**로 진입합니다.
+2. 새로운 SQL 쿼리창을 열고 아래의 **롤백 DDL 스크립트**를 입력한 후 **[Run]**을 실행하여 데이터베이스의 RLS 가드 및 테이블들을 직전 정상 스키마 상태로 물리적 복구합니다.
+```sql
+-- 테이블 구조 전면 롤백 복원 스크립트
+DROP POLICY IF EXISTS "Allow all select comments" ON public.comments;
+DROP POLICY IF EXISTS "Allow approved members insert comments" ON public.comments;
+DROP POLICY IF EXISTS "Allow all select memories" ON public.memories;
+DROP POLICY IF EXISTS "Allow approved members insert memories" ON public.memories;
+DROP POLICY IF EXISTS "Allow only admin delete memories" ON public.memories;
+DROP POLICY IF EXISTS "Allow members profile insert" ON public.members;
+DROP POLICY IF EXISTS "Allow members profile select" ON public.members;
+DROP POLICY IF EXISTS "Allow only admin update members" ON public.members;
+
+DROP TABLE IF EXISTS public.comments CASCADE;
+DROP TABLE IF EXISTS public.memories CASCADE;
+DROP TABLE IF EXISTS public.members CASCADE;
+```
+
+---
+
 상세한 환경변수 설정 및 시크릿 키 획득 경로는 [Infrastructure-Specification](Infrastructure-Specification) 가이드를 참고하십시오.
