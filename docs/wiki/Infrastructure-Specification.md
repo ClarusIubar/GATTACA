@@ -222,94 +222,94 @@ compatibility_date = "2026-05-31"
 
 [vars]
 SUPABASE_URL = "https://your-supabase-project.supabase.co"
-# (주의) 민감한 키값은 아래 CLI를 통해 Secret으로 등록해야 하며 wrangler.toml에 직접 커밋하지 않습니다.
-```
-
-#### 2. Worker Secret 암호 키 등록 (CLI 명령어)
-터미널을 열고 다음 명령어로 프라이빗 관리 권한 키들을 등록합니다.
-```bash
-npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
-npx wrangler secret put KAKAO_CLIENT_SECRET
-```
-
-#### 3. Workers API 엔드포인트 주요 소스코드 구조 (`src/index.ts`)
-```typescript
-import { createClient } from '@supabase/supabase-js';
-
-export interface Env {
-  SUPABASE_URL: string;
-  SUPABASE_SERVICE_ROLE_KEY: string;
-  KAKAO_CLIENT_SECRET: string;
-}
-
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-    
-    // CORS 헤더 설정
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    };
-
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders });
-    }
-
-    // 1. 카카오 토큰 및 가입 중계 엔드포인트
-    if (url.pathname === '/api/auth/kakao' && request.method === 'POST') {
-      const { code, redirect_uri } = await request.json() as any;
-      
-      // 카카오 토큰 요청
-      const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          client_id: 'your-kakao-javascript-or-rest-key',
-          client_secret: env.KAKAO_CLIENT_SECRET,
-          redirect_uri,
-          code,
-        })
-      });
-      const tokens = await tokenResponse.json() as any;
-
-      // 카카오 사용자 정보 조회
-      const userResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
-        headers: { Authorization: `Bearer ${tokens.access_token}` }
-      });
-      const userData = await userResponse.json() as any;
-
-      // Supabase Service Role을 활용해 보안 가드로 강제 등급 부여 및 회원가입 처리
-      const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
-      const { data, error } = await supabase
-        .from('members')
-        .upsert({
-          id: userData.id, // Kakao ID를 고유식별자로 사용 가능
-          kakao_id: String(userData.id),
-          nickname: userData.properties.nickname,
-          avatar_url: userData.properties.profile_image,
-          grade: 'PENDING' // 신규 회원은 무조건 승인대기로 시작
-        })
-        .select();
-
-      return new Response(JSON.stringify({ user: data, tokens }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    return new Response('Not Found', { status: 404, headers: corsHeaders });
-  }
-};
-```
-
-#### 4. 백엔드 배포 명령어
-```bash
-# Wrangler를 통한 Cloudflare Workers 서버리스 배포
-npx wrangler deploy
 ```
 
 ---
 
-이 명세에 적시된 SQL DDL 및 API 흐름도를 바탕으로 인프라(카카오 로그인, Supabase, Cloudflare)를 순차적으로 구축하면, R1 단위 테스트가 보증하는 구조 위에서 완벽히 실시간 연동이 이루어지는 강력한 프로덕션 웹 서비스를 구동할 수 있습니다.
+## 4. CI/CD 및 배포 시크릿 키(Secret Keys) 발급 및 등록 가이드
+
+사전 지식이 없는 비전문가도 따라 하여 GitHub 자동 배포(GitHub Actions)와 Cloudflare Secrets 시스템을 구축할 수 있는 초정밀 가이드라인입니다.
+
+### 4.1 Cloudflare API Token & Account ID 발급
+GitHub Actions 자동 빌드 및 배포 파이프라인에서 Cloudflare 자원을 제어할 수 있도록 인증 수단을 획득하는 과정입니다.
+
+#### [A] Cloudflare API Token (보안 인증 키) 발급
+1. [Cloudflare Dashboard](https://dash.cloudflare.com/)에 로그인합니다.
+2. 메인 화면 우측 상단의 **[사용자 프로필] (My Profile)** 아이콘을 클릭한 뒤, **[API 토큰] (API Tokens)** 메뉴를 선택합니다.
+3. **[토큰 생성] (Create Token)** 버튼을 클릭합니다.
+4. 여러 템플릿 목록 중 **[Edit Cloudflare Workers] (Cloudflare Workers 편집)** 오른쪽의 **[템플릿 사용] (Use template)** 버튼을 클릭합니다.
+5. **[Permissions] (권한)** 설정 섹션에서 다음 두 권한 항목이 존재하는지 확인하고 추가/유지합니다:
+   - `Account` ➡️ `Cloudflare Pages` ➡️ `Edit` (Pages 자동 배포 제어 권한)
+   - `Account` ➡️ `Workers Scripts` ➡️ `Edit` (Workers 서버리스 코드 배포 권한)
+6. **[Account Resources]**를 `All accounts`로, **[Zone Resources]**를 `All zones`로 설정합니다.
+7. 페이지 최하단의 **[요약 페이지로 이동] (Continue to summary)** 버튼을 누르고, 최종 확인 후 **[토큰 생성] (Create Token)** 버튼을 클릭합니다.
+8. 화면에 생성되어 나타나는 매우 긴 암호화 문자열(API Token)을 **[Copy]** 하여 메모장 등 안전한 곳에 즉시 보관합니다. *(이 토큰은 다시 조회할 수 없으므로 반드시 한 번에 안전하게 백업해야 합니다.)*
+
+#### [B] Cloudflare Account ID (계정 ID) 확인
+1. Cloudflare 대시보드 메인 페이지로 이동합니다.
+2. 대시보드 화면 우측 패널의 **[계정 ID] (Account ID)** 영역에 표시된 32자리 난수 값을 찾아 복사하여 안전하게 보관합니다.
+
+---
+
+### 4.2 GitHub Actions (CI/CD) Secrets 등록
+코드 푸시 시 자동으로 Pages 정적 빌드 및 배포가 수행되도록 GitHub에 클라우드 토큰을 바인딩하는 방법입니다.
+
+1. 본인의 GitHub `GATTACA` 저장소 웹 페이지로 이동합니다.
+2. 상단 탭 목록 우측 끝에 위치한 **[Settings]** (톱니바퀴 모양 아이콘)를 클릭합니다.
+3. 좌측 사이드바 메뉴 하단에서 **[Secrets and variables]** ➡️ **[Actions]**를 차례대로 선택합니다.
+4. **[New repository secret]** (초록색 버튼)을 클릭합니다.
+5. 다음 두 개의 암호화 보안 변수를 각각 추가합니다:
+   - **첫 번째 Secret**:
+     - **Name**: `CLOUDFLARE_API_TOKEN`
+     - **Value**: (위 4.1-[A] 단계에서 안전하게 보존한 Cloudflare API Token 문자열 붙여넣기)
+   - **두 번째 Secret**:
+     - **Name**: `CLOUDFLARE_ACCOUNT_ID`
+     - **Value**: (위 4.1-[B] 단계에서 보존한 32자리 Account ID 문자열 붙여넣기)
+6. 등록이 완료되면, 메인 레포의 `.github/workflows/deploy.yml` 파일이 실행될 때 이 값들을 매핑하여 빌드와 배포를 100% 무인 자동화합니다.
+
+---
+
+### 4.3 Supabase & 카카오 비밀 Key 발급 및 Workers Secrets 입력
+프론트엔드 브라우저에 유출되어서는 안 되는 최고 관리자 및 서드파티 비밀번호 키들을 Cloudflare Workers의 보안 Secret 환경변수 풀에 주입하는 순서입니다.
+
+#### [A] Supabase `service_role` Key (데이터베이스 무제한 관리자 키) 발급
+1. [Supabase Dashboard](https://supabase.com/dashboard)에 로그인하여 모임 프로젝트를 선택합니다.
+2. 화면 좌측 메뉴 바 최하단의 **[Project Settings]** (톱니바퀴 모양 아이콘) ➡️ **[API]** 메뉴를 선택합니다.
+3. **[Project API keys]** 섹션에서 `service_role` (secret) 이라고 기재된 영역을 찾습니다.
+4. **[Reveal]** 버튼을 눌러 숨겨진 긴 문자열 키값을 확인하고 안전하게 복사합니다. *(이 키는 RLS를 우회할 수 있는 강력한 마스터 키이므로 외부에 절대 공개되어서는 안 됩니다.)*
+
+#### [B] 카카오 `Client Secret` (API 보안 비밀코드) 발급
+1. [Kakao Developers](https://developers.kakao.com/) 포털 ➡️ [내 애플리케이션] ➡️ `추억열차` 애플리케이션을 선택합니다.
+2. 좌측 메뉴 목록에서 **[제품 설정]** ➡️ **[카카오 로그인]** ➡️ **[보안]** 메뉴로 이동합니다.
+3. **[Client Secret]** 섹션에서 **[코드 발급]**을 클릭하여 활성화하고 암호 키값을 생성합니다. (보안 가드를 위해 이 기능을 활성화하면 토큰 교환 REST API 호출 시 이 Client Secret이 필수로 검증됩니다.)
+4. 활성화되어 화면에 노출된 `Client Secret` 문자열 코드를 복사합니다.
+
+#### [C] 획득한 관리자 비밀 Key들을 Cloudflare Workers Secrets에 주입
+두 비밀 키를 Worker 서버의 안전한 컨테이너 저장소에 주입하는 절차입니다.
+
+**방법 1: Cloudflare Web GUI 대시보드에서 등록 (권장)**
+1. Cloudflare 대시보드 ➡️ **[Workers & Pages]** ➡️ 본인이 생성한 `gattaca-backend` Workers 서비스를 클릭하여 진입합니다.
+2. 상단 탭 중 **[Settings]** (설정) ➡️ 좌측 메뉴의 **[Variables]** (변수)를 클릭합니다.
+3. **[Environment Variables]** (환경변수) 설정창에서 우측 하단의 **[Add secret]** 버튼을 클릭합니다.
+4. 다음과 같이 두 개 항목을 추가 입력합니다:
+   - **항목 1**:
+     - **Name**: `SUPABASE_SERVICE_ROLE_KEY`
+     - **Value**: (위 [A] 단계에서 획득한 Supabase service_role Key 복사 및 붙여넣기)
+   - **항목 2**:
+     - **Name**: `KAKAO_CLIENT_SECRET`
+     - **Value**: (위 [B] 단계에서 획득한 카카오 Client Secret 복사 및 붙여넣기)
+5. **[Save and deploy]** (저장 및 배포) 버튼을 눌러 변경한 비밀 키들을 안전하게 서버에 암호화하여 락다운시킵니다.
+
+**방법 2: CLI 터미널(Wrangler)로 직접 등록**
+개발 머신의 터미널에서 다음 명령어를 한 줄씩 실행하여 비밀 값을 대화식 인터페이스로 다이렉트 주입할 수도 있습니다:
+```bash
+# 1. Supabase 마스터 키 주입 (실행 후 복사한 값을 터미널에 붙여넣고 엔터)
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+
+# 2. 카카오 보안 비밀코드 주입 (실행 후 복사한 값을 터미널에 붙여넣고 엔터)
+npx wrangler secret put KAKAO_CLIENT_SECRET
+```
+
+---
+
+이와 같이 GitHub Action용 `CLOUDFLARE_API_TOKEN`과 `Account ID`, 그리고 Workers 백엔드용 `SUPABASE_SERVICE_ROLE_KEY`와 `KAKAO_CLIENT_SECRET`을 완전히 바인딩해 두면, 누설 걱정이 없는 강력한 Edge 보안 아키텍처 배포망이 완벽히 활성화됩니다.
