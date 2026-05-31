@@ -1,9 +1,10 @@
 # 개발기록
 
 ## 2026-05-31
-- **Wrangler 공식 CLI 배포 전환 및 package.json Supabase 패키지 영구 삭제 (TSK-001-14-FIX-2)**:
+- **Wrangler 공식 CLI 배포 전환, 대소문자 프로젝트명 오류 극복 및 package.json Supabase 패키지 영구 삭제 (TSK-001-14-FIX-2)**:
   - Node.js 22 LTS 환경에서 구 버전 `cloudflare/pages-action@v1` 액션의 치명적인 API/Undici 호환성 에러로 빌드가 깨진 원인을 정확히 규명 및 대응.
   - 서드파티 깃허브 액션 대신 깃허브 러너에서 공식 **`npx wrangler pages deploy`**를 직접 호출하여 배포하는 파이프라인으로 리팩토링함으로써 서드파티 호환성 배포 에러를 원천 차단.
+  - Cloudflare Pages 배포 시 기존 소문자 하드코딩된 프로젝트명(`gattaca`)이 사용자의 실제 대문자 Pages 프로젝트명(`GATTACA`)과 불일치하여 발생한 **8000007 (Project not found) API 에러**를 날카롭게 식별하고, `--project-name=GATTACA` 로 정밀 변경하여 원천 복구 성공.
   - `package.json` 의 dependencies에 잔존해 있던 `@supabase/supabase-js` 패키지를 물리적으로 완벽 영구 삭제하여 Supabase 찌꺼기 라이브러리를 단 1바이트도 남기지 않고 완전 정비.
 - **GitHub Pages 레거시 배포 제거 및 Cloudflare Pages 단일 배포 통합 (TSK-001-14)**:
   - 깃허브 페이지스 정적 배포 파이프라인 잔재인 `deploy` 잡(job), `Setup Pages`, `Upload artifact` 단계를 `.github/workflows/deploy.yml` 파일에서 완전히 도려내어 완벽히 영구 삭제.
