@@ -185,6 +185,30 @@ binding = "BUCKET"
 bucket_name = "memory-photos"
 ```
 
+#### 2. Cloudflare Workers Secrets 등록 (카카오 API 민감 키 격리)
+카카오 로그인 인가 코드를 토큰으로 교환하거나, 알림 메시지를 비동기 발송할 때 필요한 민감한 키들은 보안 경계 격리 원칙에 따라 GitHub Secrets가 아닌 **Cloudflare Workers Secrets**에 직접 암호화 등록하여 런타임에 휘발성으로 사용합니다.
+
+**[A] Wrangler CLI를 통한 로컬 주입 방법 (개발자 권장)**
+터미널에서 Workers 백엔드 프로젝트 디렉토리로 이동한 후 아래 wrangler 명령어를 실행하여 보안 변수를 추가합니다.
+```bash
+# 1. 카카오 REST API 키 등록
+npx wrangler secret put KAKAO_REST_API_KEY
+
+# 2. 카카오 OAuth Client Secret 등록 (활성화한 경우 필수)
+npx wrangler secret put KAKAO_CLIENT_SECRET
+```
+*실행 후 터미널 메시지에 따라 주입할 실제 카카오 키 값을 복사-붙여넣기 하면 보안 락다운이 완료됩니다.*
+
+**[B] Cloudflare 대시보드를 통한 주입 방법 (운영자 권장)**
+1. [Cloudflare Dashboard](https://dash.cloudflare.com/) ➡️ **[Workers & Pages]** ➡️ **[Overview]** 메뉴로 이동합니다.
+2. 배포된 `gattaca-backend` Worker를 클릭합니다.
+3. 상단 탭에서 **[Settings]** ➡️ **[Variables]** 메뉴를 차례대로 선택합니다.
+4. **[Environment Variables]** 섹션 하단의 **[Add variable]** 버튼을 클릭합니다.
+5. 아래 키명으로 등록하고 반드시 **[Encrypt]** (자물쇠 아이콘)를 클릭해 시크릿(Secrets) 형태로 암호화 락다운합니다:
+   - **Name**: `KAKAO_REST_API_KEY` ➡️ **Value**: 카카오 REST API 키 기입
+   - **Name**: `KAKAO_CLIENT_SECRET` ➡️ **Value**: 카카오 Client Secret 기입
+6. 우측 하단의 **[Save and deploy]** 버튼을 눌러 변경을 실서버 컨테이너에 반영합니다.
+
 ---
 
 ## 4. CI/CD 및 배포 시크릿 키(Secret Keys) 발급 및 등록 가이드

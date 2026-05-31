@@ -1,6 +1,9 @@
 # 개발기록
 
 ## 2026-05-31
+- **Cloudflare Workers 카카오 API 시크릿 락다운 가이드 추가 (TSK-001-12)**:
+  - 깃허브 시크릿에는 오직 클라우드플레어 정적 CDN 자산 빌드/배포를 위한 키만 탑재하고, 카카오 소셜 로그인 및 비동기 메시지 API에 필요한 민감한 키(`KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`)는 오직 Cloudflare Workers Secrets 환경에만 직접 암호화 격리하도록 설계 사상 정비.
+  - `docs/wiki/Infrastructure-Specification.md` 문서 내에 Wrangler CLI 및 Cloudflare Dashboard를 경유해 백엔드 에지 컨테이너에 암호화 락다운 방식으로 직접 Secrets를 설정 및 배포하는 상세 운용 가이드 신규 추가 보완.
 - **Supabase BaaS 의존성/레거시 찌꺼기 완전 퇴거 및 코드 청소 마감 (TSK-001-11)**:
   - `SupabaseRepository` 클래스 및 supabase-js 클라이언트 의존성을 `repository.ts`에서 완벽하게 퇴거/삭제 완료.
   - `src/lib/supabase.ts` 파일(Supabase 클라이언트 생성 로직) 물리적 삭제 조치.
