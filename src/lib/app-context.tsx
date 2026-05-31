@@ -6,14 +6,12 @@
  *   - 데이터 저장/조회 메커니즘을 MemoryTrainRepository 인터페이스 뒤로 캡슐화하여 데이터 액세스 방식 변화(Demo -> Supabase)가 비즈니스 로직에 무해하게 차단되도록 설계되었습니다.
  *   - 비즈니스 권한 검증 규칙(getWriter, getAdmin 등)을 일관되게 적용하여 보안 및 오작동 가능성을 원천 배제합니다.
  * Non-Goals: 데이터베이스 쿼리 및 SQL 데이터베이스 필드 번역은 수행하지 않으며, 이는 리포지토리 레이어에 위임합니다.
- * Dependencies: react, @supabase/supabase-js, ./env, ./supabase, ./types, ./repository
+ * Dependencies: react, ./env, ./types, ./repository
  */
 
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react'
-import type { Session } from '@supabase/supabase-js'
-import { appEnv, isSupabaseConfigured, isCloudflareConfigured } from './env'
-import { supabase } from './supabase'
-import { DemoRepository, SupabaseRepository, CloudflareRepository, type MemoryTrainRepository } from './repository'
+import { appEnv, isCloudflareConfigured } from './env'
+import { DemoRepository, CloudflareRepository, type MemoryTrainRepository } from './repository'
 import { sendKakaoMessage } from './notification'
 import type {
   AuthMode,
@@ -73,45 +71,27 @@ function loadDemoPersona(): DemoPersona {
   return 'guest'
 }
 
-function getProfileFromMetadata(session: Session) {
-  const metadata = session.user.user_metadata
-  return {
-    nickname:
-      metadata.nickname ??
-      metadata.name ??
-      metadata.full_name ??
-      metadata.preferred_username ??
-      session.user.email ??
-      '새 승객',
-    avatarUrl: metadata.avatar_url ?? metadata.picture ?? '',
-  }
-}
+
 
 export function AppProvider({ children }: PropsWithChildren) {
   const [authMode] = useState<AuthMode>(
-    isCloudflareConfigured
-      ? 'cloudflare'
-      : isSupabaseConfigured
-      ? 'supabase'
-      : 'demo',
+    isCloudflareConfigured ? 'cloudflare' : 'demo',
   )
   const [demoPersona, setDemoPersonaState] = useState<DemoPersona>(() =>
-    isCloudflareConfigured || isSupabaseConfigured ? 'guest' : loadDemoPersona(),
+    isCloudflareConfigured ? 'guest' : loadDemoPersona(),
   )
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [events, setEvents] = useState<EventRecord[]>([])
   const [memories, setMemories] = useState<MemoryRecord[]>([])
   const [comments, setComments] = useState<CommentRecord[]>([])
-  const [supabaseCurrentUser, setSupabaseCurrentUser] = useState<UserProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(isCloudflareConfigured || isSupabaseConfigured)
+  const [externalCurrentUser, setExternalCurrentUser] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(isCloudflareConfigured)
   const [errorMessage, setErrorMessage] = useState('')
 
   // 1. DIP: 저장소 인터페이스 주입 바인딩
   const [repository] = useState<MemoryTrainRepository>(() =>
     isCloudflareConfigured
       ? new CloudflareRepository(appEnv.cloudflareApiUrl)
-      : isSupabaseConfigured && supabase
-      ? new SupabaseRepository(supabase)
       : new DemoRepository(),
   )
 
@@ -128,13 +108,12 @@ export function AppProvider({ children }: PropsWithChildren) {
             profile.id === `profile-${demoPersona === 'approved' ? 'member' : demoPersona}`
         ) ?? null
 
-  const resolvedCurrentUser = authMode === 'demo' ? demoCurrentUser : supabaseCurrentUser
+  const resolvedCurrentUser = authMode === 'demo' ? demoCurrentUser : externalCurrentUser
   const isApproved = resolvedCurrentUser?.approvalStatus === 'approved'
   const isAdmin = resolvedCurrentUser?.role === 'admin'
 
   useEffect(() => {
     let disposed = false
-    let unsubscribe = () => {}
 
     async function bootstrap() {
       setIsLoading(true)
@@ -142,7 +121,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
       try {
         if (authMode === 'demo') {
-          await fetchRemoteData(null)
+          await fetchRemoteData()
           setIsLoading(false)
           return
         }
@@ -151,46 +130,11 @@ export function AppProvider({ children }: PropsWithChildren) {
           // Cloudflare 에지 생태계 세션 복원
           const nextProfiles = await repository.fetchProfiles()
           const mockUser = nextProfiles.find(p => p.role === 'admin') || nextProfiles[0] || null
-          setSupabaseCurrentUser(mockUser)
+          setExternalCurrentUser(mockUser)
           
-          await fetchRemoteData(null)
+          await fetchRemoteData()
           setIsLoading(false)
           return
-        }
-
-        if (!supabase) {
-          setIsLoading(false)
-          return
-        }
-
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
-        if (session) {
-          await ensureProfile(session)
-        } else if (!disposed) {
-          setSupabaseCurrentUser(null)
-        }
-
-        await fetchRemoteData(session)
-
-        const {
-          data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-          void (async () => {
-            setIsLoading(true)
-            if (nextSession) {
-              await ensureProfile(nextSession)
-            } else {
-              setSupabaseCurrentUser(null)
-            }
-            await fetchRemoteData(nextSession)
-          })()
-        })
-
-        unsubscribe = () => {
-          subscription.unsubscribe()
         }
       } catch (error) {
         if (!disposed) {
@@ -211,66 +155,11 @@ export function AppProvider({ children }: PropsWithChildren) {
 
     return () => {
       disposed = true
-      unsubscribe()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authMode])
 
-  async function ensureProfile(session: Session) {
-    if (!supabase) {
-      return
-    }
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      throw authError ?? new Error('사용자 정보를 가져오지 못했습니다.')
-    }
-
-    const profileFromMetadata = getProfileFromMetadata(session)
-    const { data: existingProfile, error: selectError } = await supabase
-      .from('profiles')
-      .select('id, auth_user_id, kakao_nickname, avatar_url, approval_status, role')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-
-    if (selectError) {
-      throw selectError
-    }
-
-    const role = user.id === appEnv.adminUserId ? 'admin' : existingProfile?.role ?? 'member'
-    const approvalStatus =
-      role === 'admin' ? 'approved' : existingProfile?.approval_status ?? 'pending'
-
-    const payload = {
-      auth_user_id: user.id,
-      kakao_nickname: profileFromMetadata.nickname,
-      avatar_url: profileFromMetadata.avatarUrl,
-      approval_status: approvalStatus,
-      role,
-    }
-
-    if (existingProfile) {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update(payload)
-        .eq('id', existingProfile.id)
-
-      if (updateError) {
-        throw updateError
-      }
-    } else {
-      const { error: insertError } = await supabase.from('profiles').insert(payload)
-      if (insertError) {
-        throw insertError
-      }
-    }
-  }
-
-  async function fetchRemoteData(session: Session | null) {
+  async function fetchRemoteData() {
     try {
       const [nextProfiles, nextEvents, nextMemories, nextComments] = await Promise.all([
         repository.fetchProfiles(),
@@ -283,15 +172,6 @@ export function AppProvider({ children }: PropsWithChildren) {
       setEvents(nextEvents)
       setMemories(nextMemories)
       setComments(nextComments)
-
-      if (authMode === 'supabase') {
-        if (!session) {
-          setSupabaseCurrentUser(null)
-        } else {
-          const nextUser = nextProfiles.find((profile) => profile.authUserId === session.user.id) ?? null
-          setSupabaseCurrentUser(nextUser)
-        }
-      }
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -304,10 +184,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }
 
   async function refreshData() {
-    const session = supabase && authMode === 'supabase'
-      ? (await supabase.auth.getSession()).data.session
-      : null
-    await fetchRemoteData(session)
+    await fetchRemoteData()
   }
 
   function getWriter() {
@@ -336,7 +213,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         buttonTitle: '열차 타러가기',
         buttonUrl: window.location.origin,
       },
-      appEnv.supabaseAnonKey || null, // Access Token 대용으로 설정값 주입
+      null, // Access Token 대용으로 설정값 주입
       true // Mock Mode 활성화하여 유연한 integration 보장
     ).then((res) => {
       if (!res.success) {
@@ -399,21 +276,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       return result.publicUrl
     }
 
-    if (!supabase || !resolvedCurrentUser) {
-      throw new Error('사진 업로드를 진행할 수 없습니다.')
-    }
-
-    const path = `${resolvedCurrentUser.id}/${Date.now()}-${photoFile.name}`
-    const { error: uploadError } = await supabase.storage
-      .from('memory-photos')
-      .upload(path, photoFile, { upsert: true })
-
-    if (uploadError) {
-      throw uploadError
-    }
-
-    const { data } = supabase.storage.from('memory-photos').getPublicUrl(path)
-    return data.publicUrl
+    throw new Error('사진 업로드를 진행할 수 없습니다.')
   }
 
   async function createMemory(input: MemoryInput, photoFile: File | null, photoUrl: string) {
@@ -490,26 +353,11 @@ export function AppProvider({ children }: PropsWithChildren) {
       )}`
       return
     }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'kakao',
-      options: {
-        redirectTo: window.location.href,
-      },
-    })
-
-    if (error) {
-      setErrorMessage(error.message)
-    }
   }
 
   async function signOut() {
     if (authMode === 'cloudflare') {
-      setSupabaseCurrentUser(null)
+      setExternalCurrentUser(null)
       try {
         await fetch(`${appEnv.cloudflareApiUrl}/api/auth/logout`, { method: 'POST' })
       } catch (e) {
@@ -517,20 +365,11 @@ export function AppProvider({ children }: PropsWithChildren) {
       }
       return
     }
-
-    if (!supabase) {
-      return
-    }
-
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      setErrorMessage(error.message)
-    }
   }
 
   const value: AppContextValue = {
     authMode,
-    isConfigured: isSupabaseConfigured,
+    isConfigured: isCloudflareConfigured,
     isLoading,
     errorMessage,
     currentUser: resolvedCurrentUser,

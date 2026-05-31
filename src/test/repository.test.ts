@@ -9,9 +9,8 @@
  * Dependencies: vitest, src/lib/repository, @supabase/supabase-js
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { DemoRepository, SupabaseRepository } from '../lib/repository'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { DemoRepository } from '../lib/repository'
 
 describe('DemoRepository', () => {
   let repository: DemoRepository
@@ -115,71 +114,5 @@ describe('DemoRepository', () => {
     await repository.deleteComment(newCommentId)
     comments = await repository.fetchComments()
     expect(comments).toHaveLength(1)
-  })
-})
-
-describe('SupabaseRepository', () => {
-  it('calls correct client methods on fetchProfiles and translates response correctly', async () => {
-    const mockProfiles = [
-      {
-        id: 'prof-1',
-        auth_user_id: 'auth-1',
-        kakao_nickname: '테스터1',
-        avatar_url: 'http://test.com',
-        approval_status: 'approved',
-        role: 'member',
-      },
-    ]
-
-    const selectMock = vi.fn().mockReturnValue({
-      order: vi.fn().mockResolvedValue({ data: mockProfiles, error: null }),
-    })
-
-    const mockClient = {
-      from: vi.fn().mockReturnValue({
-        select: selectMock,
-      }),
-    } as unknown as SupabaseClient
-
-    const repository = new SupabaseRepository(mockClient)
-    const profiles = await repository.fetchProfiles()
-
-    expect(mockClient.from).toHaveBeenCalledWith('profiles')
-    expect(selectMock).toHaveBeenCalledWith('id, auth_user_id, kakao_nickname, avatar_url, approval_status, role')
-    expect(profiles).toHaveLength(1)
-    expect(profiles[0].kakaoNickname).toBe('테스터1')
-    expect(profiles[0].approvalStatus).toBe('approved')
-  })
-
-  it('calls correct client methods on createEvent', async () => {
-    const insertMock = vi.fn().mockResolvedValue({ error: null })
-    const mockClient = {
-      from: vi.fn().mockReturnValue({
-        insert: insertMock,
-      }),
-    } as unknown as SupabaseClient
-
-    const repository = new SupabaseRepository(mockClient)
-    const input = {
-      title: '제목',
-      eventAt: '2026-06-10T12:00',
-      location: '어딘가',
-      what: '무엇',
-      how: '어떻게',
-      decisionSummary: '요약',
-    }
-
-    await repository.createEvent(input, 'prof-1')
-
-    expect(mockClient.from).toHaveBeenCalledWith('events')
-    expect(insertMock).toHaveBeenCalledWith({
-      title: '제목',
-      event_at: '2026-06-10T12:00',
-      location: '어딘가',
-      what: '무엇',
-      how: '어떻게',
-      decision_summary: '요약',
-      created_by: 'prof-1',
-    })
   })
 })

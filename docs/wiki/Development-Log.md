@@ -1,9 +1,15 @@
 # 개발기록
 
 ## 2026-05-31
+- **Supabase BaaS 의존성/레거시 찌꺼기 완전 퇴거 및 코드 청소 마감 (TSK-001-11)**:
+  - `SupabaseRepository` 클래스 및 supabase-js 클라이언트 의존성을 `repository.ts`에서 완벽하게 퇴거/삭제 완료.
+  - `src/lib/supabase.ts` 파일(Supabase 클라이언트 생성 로직) 물리적 삭제 조치.
+  - `app-context.tsx` 내에 남아있던 Supabase Auth 세션 구독 리스너(`onAuthStateChange`), 자동 가입 가드(`ensureProfile`), 스토리지 업로드 API 바인딩, `isSupabaseConfigured` 상태 및 분기를 100% 제거 및 `externalCurrentUser` 중심 구조로 초정밀 리팩토링.
+  - `App.tsx` 내의 Supabase 전용 로그인/로그아웃 노출 및 데모 경고 배너 텍스트를 Cloudflare 에지 런타임에 맞추어 완전히 정비.
+  - `docs/wiki/Architecture.md` 및 `docs/wiki/Infrastructure-Specification.md` 내의 다이어그램 및 시크릿 변수 가이드라인에서 Supabase 관련 항목을 완벽히 퇴거 완료.
 - **GitHub Secrets VITE 접두사 배제 연동 및 CI/CD 워크플로우 정비 (TSK-001-10)**:
   - 깃허브 저장소 Secrets의 `VITE_` 프레임워크 종속성 접두사 배제 정책 수립.
-  - GitHub Actions 워크플로우 `deploy.yml`을 수정하여 깃허브 시크릿 표준명(`CLOUDFLARE_API_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ADMIN_USER_ID`)을 Vite 클라이언트 빌드 전용 VITE_ 환경변수로 자동 매핑 매칭 처리 완료.
+  - GitHub Actions 워크플로우 `deploy.yml`을 수정하여 깃허브 시크릿 표준명(`CLOUDFLARE_API_URL`, `ADMIN_USER_ID`)을 Vite 클라이언트 빌드 전용 VITE_ 환경변수로 자동 매핑 매칭 처리 완료.
   - `docs/wiki/Infrastructure-Specification.md` 위키 문서에 인프라 Secrets 명명 규칙 개정 및 빌드/배포 환경변수 주입 경계 반영 완료.
 - **Cloudflare Pages CI/CD 통합 배포 파이프라인 수립 및 보안 경계 최신화 (TSK-001-09)**:
   - GitHub Actions 워크플로우(`deploy.yml`)의 빌드 단계(`npm run build`)에 `VITE_CLOUDFLARE_API_URL` 빌드 타임 환경 변수 자동 주입 코드 연동 완료.

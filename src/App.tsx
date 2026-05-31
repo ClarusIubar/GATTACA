@@ -62,7 +62,7 @@ function Header() {
             </small>
           </div>
 
-          {authMode === 'supabase' ? (
+          {authMode === 'cloudflare' ? (
             currentUser ? (
               <button className="secondary-button" onClick={() => void signOut()}>
                 로그아웃
@@ -97,7 +97,7 @@ function StatusBanner() {
         <div className="notice-card notice-card--demo">
           <strong>데모 모드</strong>
           <p>
-            Supabase 환경변수가 없어 읽기 중심 데모 모드로 실행 중입니다. 헤더에서 권한 상태를
+            백엔드 API 설정이 없어 읽기 중심 데모 모드로 실행 중입니다. 헤더에서 권한 상태를
             바꾸며 승인 흐름을 검증할 수 있습니다.
           </p>
         </div>
@@ -113,7 +113,7 @@ function StatusBanner() {
     )
   }
 
-  if (authMode === 'supabase' && !currentUser) {
+  if (authMode === 'cloudflare' && !currentUser) {
     return (
       <div className="shell">
         <div className="notice-card">
