@@ -1,6 +1,11 @@
 # 개발기록
 
 ## 2026-05-31
+- **GitHub Secrets 및 Variables 물리 이원화 정비 (TSK-001-13)**:
+  - GitHub Secrets는 오직 암호화된 비밀자격 증명(`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) 단 2개만을 등록 및 보관하도록 보안 경계를 엄격히 축소 정형화.
+  - 비민감 빌드 설정 정보(`CLOUDFLARE_API_URL`, `ADMIN_USER_ID`)는 GitHub Variables 영역에서 명확하게 분리 관리하도록 수립.
+  - `.github/workflows/deploy.yml` 파일 내 Vite 빌드 환경 변수 주입 시, 기존 `secrets` 바인딩을 `vars` 스코프 바인딩(`${{ vars.CLOUDFLARE_API_URL }}`, `${{ vars.ADMIN_USER_ID }}`)으로 정교하게 고도화 변경 완료.
+  - `docs/wiki/Infrastructure-Specification.md` 위키에 이와 같은 Secrets 및 Variables 물리적 격리 등록 및 바인딩 운용 매뉴얼을 완벽하게 반영 개정 완료.
 - **Cloudflare Workers 카카오 API 시크릿 락다운 가이드 추가 (TSK-001-12)**:
   - 깃허브 시크릿에는 오직 클라우드플레어 정적 CDN 자산 빌드/배포를 위한 키만 탑재하고, 카카오 소셜 로그인 및 비동기 메시지 API에 필요한 민감한 키(`KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`)는 오직 Cloudflare Workers Secrets 환경에만 직접 암호화 격리하도록 설계 사상 정비.
   - `docs/wiki/Infrastructure-Specification.md` 문서 내에 Wrangler CLI 및 Cloudflare Dashboard를 경유해 백엔드 에지 컨테이너에 암호화 락다운 방식으로 직접 Secrets를 설정 및 배포하는 상세 운용 가이드 신규 추가 보완.

@@ -38,8 +38,8 @@ jobs:
 
       - name: Build
         env:
-          VITE_ADMIN_USER_ID: ${{ secrets.ADMIN_USER_ID }}
-          VITE_CLOUDFLARE_API_URL: ${{ secrets.CLOUDFLARE_API_URL }}
+          VITE_ADMIN_USER_ID: ${{ vars.ADMIN_USER_ID }}
+          VITE_CLOUDFLARE_API_URL: ${{ vars.CLOUDFLARE_API_URL }}
         run: npm run build
 
       - name: Setup Pages
