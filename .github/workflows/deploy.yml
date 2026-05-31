@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages and Cloudflare Pages
 
 on:
   push:
@@ -50,6 +50,14 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: 'gattaca'
+          directory: './dist'
 
   deploy:
     environment:
