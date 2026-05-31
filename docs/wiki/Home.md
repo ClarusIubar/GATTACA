@@ -9,6 +9,7 @@
 - 운영정책: [Operations-Policy](Operations-Policy)
 - 배포/환경설정: [Deployment-Setup](Deployment-Setup)
 - 런치 체크리스트: [Launch-Checklist](Launch-Checklist)
+- 인프라 사양 및 연동 가이드: [Infrastructure-Specification](Infrastructure-Specification)
 
 ## 지금 바로 볼 수 있는 것
 - GitHub Pages에 현재 코드를 배포하면 기본형은 바로 볼 수 있습니다.
