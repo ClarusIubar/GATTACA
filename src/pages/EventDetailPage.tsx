@@ -4,12 +4,15 @@ import { useAppContext } from '../lib/app-context'
 import { formatDateTime } from '../lib/format'
 import { resolveProfileAvatar, resolveProfileName } from '../lib/profile-display'
 import type { CommentInput, EventInput, MemoryInput } from '../lib/types'
+import { validateImageFile } from '../lib/file-validation'
 
 const createMemoryForm = (eventId: string): MemoryInput => ({
   eventId,
   caption: '',
   recordedAt: '',
 })
+
+const FALLBACK_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23f1f3f5'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23868e96'>추억 사진을 불러올 수 없습니다</text></svg>"
 
 export function EventDetailPage() {
   const { eventId } = useParams()
@@ -280,7 +283,13 @@ export function EventDetailPage() {
                     </div>
                     <p>{memory.caption}</p>
                     <div className="memory-card__image">
-                      <img alt={`${eventRecord.title} 메모리`} src={memory.photoUrl} />
+                      <img
+                        alt={`${eventRecord.title} 메모리`}
+                        src={memory.photoUrl || FALLBACK_IMAGE}
+                        onError={(e) => {
+                          e.currentTarget.src = FALLBACK_IMAGE
+                        }}
+                      />
                     </div>
 
                     {canEditMemory ? (
@@ -376,12 +385,25 @@ export function EventDetailPage() {
                             id={`memory-file-${memory.id}`}
                             type="file"
                             accept="image/*"
-                            onChange={(eventObject) =>
+                            onChange={(eventObject) => {
+                              const file = eventObject.target.files?.[0] ?? null
+                              if (file) {
+                                const error = validateImageFile(file)
+                                if (error) {
+                                  alert(error)
+                                  eventObject.target.value = ''
+                                  setMemoryEditFiles((current) => ({
+                                    ...current,
+                                    [memory.id]: null,
+                                  }))
+                                  return
+                                }
+                              }
                               setMemoryEditFiles((current) => ({
                                 ...current,
-                                [memory.id]: eventObject.target.files?.[0] ?? null,
+                                [memory.id]: file,
                               }))
-                            }
+                            }}
                           />
                         </div>
                         <button className="primary-button" type="submit">
@@ -568,7 +590,19 @@ export function EventDetailPage() {
                   id="memory-file"
                   type="file"
                   accept="image/*"
-                  onChange={(eventObject) => setMemoryFile(eventObject.target.files?.[0] ?? null)}
+                  onChange={(eventObject) => {
+                    const file = eventObject.target.files?.[0] ?? null
+                    if (file) {
+                      const error = validateImageFile(file)
+                      if (error) {
+                        alert(error)
+                        eventObject.target.value = ''
+                        setMemoryFile(null)
+                        return
+                      }
+                    }
+                    setMemoryFile(file)
+                  }}
                   disabled={!canWrite}
                 />
               </div>
