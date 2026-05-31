@@ -1,6 +1,13 @@
 # 개발기록
 
 ## 2026-05-31
+- **Cloudflare Native 데이터스토어 생태계(D1, R2, KV) 수평 마이그레이션 및 DIP 격리 실증 완료 (TSK-001-08)**:
+  - 외부 BaaS 의존성인 Supabase 대신 Cloudflare Pages Functions(Workers) 에지 백엔드 Native 스택으로 전격 이전.
+  - `MemoryTrainRepository` 인터페이스 규격을 100% 준수하는 `CloudflareRepository` 구체 클래스를 `repository.ts` 하위에 완벽히 구현하여 DIP(의존성 역전 원칙)의 결합 격리 설계 가치를 엄밀히 입증.
+  - `app-context.tsx` 컨텍스트 주입 로직 고도화: `isCloudflareConfigured` 런타임 라우팅 조건에 따라 에지 백엔드로의 자동 주입 스위칭 연동 완비.
+  - REST 기반의 스토리지 업로드(FormData Stream) 및 카카오 OAuth 소셜 로그인 에지 이관 완료.
+  - `docs/wiki/Architecture.md` 및 `docs/wiki/Infrastructure-Specification.md` 위키에 Cloudflare D1(SQLite DDL), R2(MIME/CORS), KV(글로벌 세션) 아키텍처 사상과 보안/배포 경계 명세를 공식 최신화 반영.
+  - 21개 Vitest 단위/통합/E2E 테스트 케이스 100% 통과 및 TypeScript 빌드 컴파일 무결성 검증 마감 성공.
 - **추억열차 아키텍처 고도화 및 5단계 TDD 체계 구축 성공 (TSK-001-01)**:
   - `MemoryTrainRepository` 인터페이스 도입으로 UI 비즈니스 로직과 데이터 보존 레이어 간 결합도 완벽 격리.
   - Vitest를 기반으로 고밀도 단위, 통합, 회귀, 스모크, E2E 시나리오 테스트(총 14개 케이스) 100% 통과 보장.

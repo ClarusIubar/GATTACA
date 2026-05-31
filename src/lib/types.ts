@@ -1,7 +1,7 @@
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 export type UserRole = 'admin' | 'member'
 export type DemoPersona = 'guest' | 'pending' | 'approved' | 'admin'
-export type AuthMode = 'demo' | 'supabase'
+export type AuthMode = 'demo' | 'supabase' | 'cloudflare'
 
 export interface UserProfile {
   id: string

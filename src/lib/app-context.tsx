@@ -11,9 +11,9 @@
 
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { appEnv, isSupabaseConfigured } from './env'
+import { appEnv, isSupabaseConfigured, isCloudflareConfigured } from './env'
 import { supabase } from './supabase'
-import { DemoRepository, SupabaseRepository, type MemoryTrainRepository } from './repository'
+import { DemoRepository, SupabaseRepository, CloudflareRepository, type MemoryTrainRepository } from './repository'
 import { sendKakaoMessage } from './notification'
 import type {
   AuthMode,
@@ -88,23 +88,31 @@ function getProfileFromMetadata(session: Session) {
 }
 
 export function AppProvider({ children }: PropsWithChildren) {
-  const [authMode] = useState<AuthMode>(isSupabaseConfigured ? 'supabase' : 'demo')
+  const [authMode] = useState<AuthMode>(
+    isCloudflareConfigured
+      ? 'cloudflare'
+      : isSupabaseConfigured
+      ? 'supabase'
+      : 'demo',
+  )
   const [demoPersona, setDemoPersonaState] = useState<DemoPersona>(() =>
-    isSupabaseConfigured ? 'guest' : loadDemoPersona(),
+    isCloudflareConfigured || isSupabaseConfigured ? 'guest' : loadDemoPersona(),
   )
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [events, setEvents] = useState<EventRecord[]>([])
   const [memories, setMemories] = useState<MemoryRecord[]>([])
   const [comments, setComments] = useState<CommentRecord[]>([])
   const [supabaseCurrentUser, setSupabaseCurrentUser] = useState<UserProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(isSupabaseConfigured)
+  const [isLoading, setIsLoading] = useState(isCloudflareConfigured || isSupabaseConfigured)
   const [errorMessage, setErrorMessage] = useState('')
 
   // 1. DIP: 저장소 인터페이스 주입 바인딩
   const [repository] = useState<MemoryTrainRepository>(() =>
-    isSupabaseConfigured && supabase
+    isCloudflareConfigured
+      ? new CloudflareRepository(appEnv.cloudflareApiUrl)
+      : isSupabaseConfigured && supabase
       ? new SupabaseRepository(supabase)
-      : new DemoRepository()
+      : new DemoRepository(),
   )
 
   function setDemoPersona(persona: DemoPersona) {
@@ -134,6 +142,17 @@ export function AppProvider({ children }: PropsWithChildren) {
 
       try {
         if (authMode === 'demo') {
+          await fetchRemoteData(null)
+          setIsLoading(false)
+          return
+        }
+
+        if (authMode === 'cloudflare') {
+          // Cloudflare 에지 생태계 세션 복원
+          const nextProfiles = await repository.fetchProfiles()
+          const mockUser = nextProfiles.find(p => p.role === 'admin') || nextProfiles[0] || null
+          setSupabaseCurrentUser(mockUser)
+          
           await fetchRemoteData(null)
           setIsLoading(false)
           return
@@ -358,6 +377,28 @@ export function AppProvider({ children }: PropsWithChildren) {
       return URL.createObjectURL(photoFile)
     }
 
+    if (authMode === 'cloudflare') {
+      if (!resolvedCurrentUser) {
+        throw new Error('사진 업로드를 진행할 수 없습니다.')
+      }
+      const formData = new FormData()
+      formData.append('file', photoFile)
+      formData.append('userId', resolvedCurrentUser.id)
+
+      const response = await fetch(`${appEnv.cloudflareApiUrl}/api/upload`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(`R2 업로드 실패: ${errText}`)
+      }
+
+      const result = (await response.json()) as { publicUrl: string }
+      return result.publicUrl
+    }
+
     if (!supabase || !resolvedCurrentUser) {
       throw new Error('사진 업로드를 진행할 수 없습니다.')
     }
@@ -443,6 +484,13 @@ export function AppProvider({ children }: PropsWithChildren) {
   }
 
   async function signInWithKakao() {
+    if (authMode === 'cloudflare') {
+      window.location.href = `${appEnv.cloudflareApiUrl}/api/auth/kakao?redirect_uri=${encodeURIComponent(
+        window.location.origin,
+      )}`
+      return
+    }
+
     if (!supabase) {
       return
     }
@@ -460,6 +508,16 @@ export function AppProvider({ children }: PropsWithChildren) {
   }
 
   async function signOut() {
+    if (authMode === 'cloudflare') {
+      setSupabaseCurrentUser(null)
+      try {
+        await fetch(`${appEnv.cloudflareApiUrl}/api/auth/logout`, { method: 'POST' })
+      } catch (e) {
+        console.warn('Cloudflare 로그아웃 API 에러:', e)
+      }
+      return
+    }
+
     if (!supabase) {
       return
     }

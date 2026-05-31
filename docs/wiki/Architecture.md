@@ -21,8 +21,12 @@ graph TD
     subgraph Storage_Layer [Storage Engine Layer]
         DemoRepo[DemoRepository Concrete] -.->|Implements| IRepo
         SupabaseRepo[SupabaseRepository Concrete] -.->|Implements| IRepo
+        CloudflareRepo[CloudflareRepository Concrete] -.->|Implements| IRepo
         DemoRepo -->|Sync| LS[(LocalStorage / Memory)]
         SupabaseRepo -->|Fetch| SB[(Supabase BaaS / PostgreSQL)]
+        CloudflareRepo -->|Fetch| CFD1[(Cloudflare D1 SQL)]
+        CloudflareRepo -->|Upload| CFR2["Cloudflare R2 (Storage)"]
+        CloudflareRepo -->|Session| CFKV["Cloudflare KV (Session)"]
     end
 
     style IRepo fill:#f9f,stroke:#333,stroke-width:2px
@@ -31,7 +35,7 @@ graph TD
 
 ### 💡 핵심 설계 특징
 - **도메인 경계 격리**: React 컴포넌트 및 `AppProvider` Context는 구체 스토리지 클래스를 직접 참조하지 않으며, 오직 `MemoryTrainRepository` 인터페이스 규격에만 강하게 의존합니다.
-- **스토리지 엔진 주입 (Dependency Injection)**: 런타임 시 구동 모드(데모 모드 혹은 실서버 연동 모드)에 따라 알맞은 리포지토리 인스턴스(`DemoRepository` 또는 `SupabaseRepository`)를 생성하여 `AppProvider` 컨텍스트에 주입하므로 프론트엔드 변경 없이 데이터 레이어를 원천 스위칭할 수 있습니다.
+- **스토리지 엔진 주입 (Dependency Injection)**: 런타임 시 구동 모드(데모 모드, Supabase 연동 모드, Cloudflare 에지 모드)에 따라 알맞은 리포지토리 인스턴스(`DemoRepository` 또는 `SupabaseRepository` 또는 `CloudflareRepository`)를 생성하여 `AppProvider` 컨텍스트에 주입하므로 프론트엔드 변경 없이 데이터 레이어를 원천 스위칭할 수 있습니다.
 - **Fast Refresh 및 컴파일 가드**: 소스코드 단일 진입점 내 내보내기 충돌 방지를 위해 `react-refresh/only-export-components` ESLint 가드를 안전하게 제어합니다.
 
 ---

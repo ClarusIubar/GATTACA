@@ -472,3 +472,115 @@ export class SupabaseRepository implements MemoryTrainRepository {
     }
   }
 }
+
+/**
+ * CloudflareRepository
+ * @description Cloudflare D1/R2/KV 기반 REST API 엔드포인트와 통신을 제어하는 에지 통합 리포지토리입니다.
+ */
+export class CloudflareRepository implements MemoryTrainRepository {
+  private readonly apiUrl: string
+
+  constructor(apiUrl: string) {
+    this.apiUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl
+  }
+
+  private async request<T>(path: string, options?: RequestInit): Promise<T> {
+    const response = await fetch(`${this.apiUrl}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options?.headers ?? {}),
+      },
+    })
+
+    if (!response.ok) {
+      const errText = await response.text()
+      throw new Error(`Cloudflare API 에러 (${response.status}): ${errText}`)
+    }
+
+    return response.json() as Promise<T>
+  }
+
+  async fetchProfiles(): Promise<UserProfile[]> {
+    return this.request<UserProfile[]>('/api/profiles')
+  }
+
+  async fetchEvents(): Promise<EventRecord[]> {
+    return this.request<EventRecord[]>('/api/events')
+  }
+
+  async fetchMemories(): Promise<MemoryRecord[]> {
+    return this.request<MemoryRecord[]>('/api/memories')
+  }
+
+  async fetchComments(): Promise<CommentRecord[]> {
+    return this.request<CommentRecord[]>('/api/comments')
+  }
+
+  async createEvent(input: EventInput, creatorId: string): Promise<void> {
+    await this.request<void>('/api/events', {
+      method: 'POST',
+      body: JSON.stringify({ ...input, createdBy: creatorId }),
+    })
+  }
+
+  async updateEvent(eventId: string, input: EventInput): Promise<void> {
+    await this.request<void>(`/api/events/${eventId}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    })
+  }
+
+  async deleteEvent(eventId: string): Promise<void> {
+    await this.request<void>(`/api/events/${eventId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async createMemory(input: MemoryInput, photoUrl: string, authorId: string): Promise<void> {
+    await this.request<void>('/api/memories', {
+      method: 'POST',
+      body: JSON.stringify({ ...input, photoUrl, authorId }),
+    })
+  }
+
+  async updateMemory(memoryId: string, input: MemoryInput, photoUrl: string): Promise<void> {
+    await this.request<void>(`/api/memories/${memoryId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...input, photoUrl }),
+    })
+  }
+
+  async deleteMemory(memoryId: string): Promise<void> {
+    await this.request<void>(`/api/memories/${memoryId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async createComment(input: CommentInput, authorId: string): Promise<void> {
+    await this.request<void>('/api/comments', {
+      method: 'POST',
+      body: JSON.stringify({ ...input, authorId }),
+    })
+  }
+
+  async updateComment(commentId: string, input: CommentInput): Promise<void> {
+    await this.request<void>(`/api/comments/${commentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    })
+  }
+
+  async deleteComment(commentId: string): Promise<void> {
+    await this.request<void>(`/api/comments/${commentId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async updateProfileApproval(profileId: string, status: ApprovalStatus): Promise<void> {
+    await this.request<void>(`/api/profiles/${profileId}/approval`, {
+      method: 'PUT',
+      body: JSON.stringify({ approvalStatus: status }),
+    })
+  }
+}
