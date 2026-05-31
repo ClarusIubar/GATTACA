@@ -1,11 +1,11 @@
 # 개발기록
 
 ## 2026-05-31
-- **Wrangler 공식 CLI 배포 전환, Pages 프로젝트 무인 자동 생성(create) 연동 및 package.json Supabase 패키지 영구 삭제 (TSK-001-14-FIX-2)**:
+- **Wrangler 공식 CLI 배포 전환, D1/R2/KV 물리 바인딩 수립 및 package.json Supabase 패키지 영구 삭제 (TSK-001-14-FIX-2)**:
   - Node.js 22 LTS 환경에서 구 버전 `cloudflare/pages-action@v1` 액션의 치명적인 API/Undici 호환성 에러로 빌드가 깨진 원인을 정확히 규명 및 대응.
   - 서드파티 깃허브 액션 대신 깃허브 러너에서 공식 **`npx wrangler pages deploy`**를 직접 호출하여 배포하는 파이프라인으로 리팩토링함으로써 서드파티 호환성 배포 에러를 원천 차단.
-  - 사용자가 Cloudflare 대시보드에 직접 프로젝트를 생성하지 않았더라도 배포 파이프라인에서 자동으로 생성 및 이식하도록 **`npx wrangler pages project create gattaca --production-branch=main`** 자동화 태스크를 연동.
-  - 이 과정에서 대문자 `GATTACA` 입력 시 Cloudflare Pages의 엄격한 명명 정책(소문자 및 대시만 허용) 위배로 인한 **8000003 (Invalid project name) API 에러**가 난 근본 사실을 식별하고, 전 단계를 소문자 **`gattaca`** 로 통일 정정하여 원천 해결 마감.
+  - 사용자의 실제 Cloudflare Pages 프로젝트 고유 이름이 **`gattaca-di0`** 인 사실을 최종 식별하고, `--project-name=gattaca-di0` 으로 완벽히 정정하여 배포 8000007 에러 해결.
+  - 에지 서버리스 Functions(Workers)가 D1 SQL DB(`gattaca-d1`), KV 글로벌 세션, R2 미디어 스토리지와 물리적으로 완벽 물려서 구동되도록, 루트 디렉토리에 **`wrangler.toml`** 바인딩 구성 파일을 신규 빌드 생성 및 밀접 이관 완료.
   - `package.json` 의 dependencies에 잔존해 있던 `@supabase/supabase-js` 패키지를 물리적으로 완벽 영구 삭제하여 Supabase 찌꺼기 라이브러리를 단 1바이트도 남기지 않고 완전 정비.
 - **GitHub Pages 레거시 배포 제거 및 Cloudflare Pages 단일 배포 통합 (TSK-001-14)**:
   - 깃허브 페이지스 정적 배포 파이프라인 잔재인 `deploy` 잡(job), `Setup Pages`, `Upload artifact` 단계를 `.github/workflows/deploy.yml` 파일에서 완전히 도려내어 완벽히 영구 삭제.
