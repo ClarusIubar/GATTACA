@@ -1,6 +1,12 @@
 # 개발기록
 
 ## 2026-05-31
+- **Supabase 제거에 따른 컴파일 빌드 실패 오류 대응 및 복구 정비 (TSK-001-13-FIX)**:
+  - Supabase 완전 제거 리팩토링 후 `npm run build` 컴파일 중 4건의 타입스크립트 에러 발생 사실 확인 및 투명한 대응 수행.
+  - **TS6133 & TS2304 (app-context.tsx)**: Supabase 세션 메타데이터 번역기인 `getProfileFromMetadata` 미사용 선언 및 `Session` 타입 부재 오류 확인 후, 해당 함수를 완전 삭제하여 컴파일 오류 해결.
+  - **TS2339 (app-context.tsx)**: 카카오 알림톡 메시지 연동부(`sendKakaoMessage`)에 잔존해 있던 `appEnv.supabaseAnonKey` 미정의 변수 참조 버그를 `null` 주입 방식으로 전격 정정.
+  - **TS6133 (repository.test.ts)**: 테스트 케이스 내 미사용 `vi` 임포트 경고 에러 확인 후 삭제 정비.
+  - 에러 대응 정비 이후 `npm run build` 정적 컴파일 및 프로덕션 최종 빌드가 완벽히 성공하는 무결성을 복구 증명.
 - **GitHub Secrets 및 Variables 물리 이원화 정비 (TSK-001-13)**:
   - GitHub Secrets는 오직 암호화된 비밀자격 증명(`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) 단 2개만을 등록 및 보관하도록 보안 경계를 엄격히 축소 정형화.
   - 비민감 빌드 설정 정보(`CLOUDFLARE_API_URL`, `ADMIN_USER_ID`)는 GitHub Variables 영역에서 명확하게 분리 관리하도록 수립.
