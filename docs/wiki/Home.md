@@ -37,10 +37,18 @@
 - **사진 업로드 스토리지 연동**: Supabase Storage 연계를 통한 실제 추억 이미지 업로드, 이미지 CDN 서빙 기능이 결여되어 있습니다.
 
 ### 2. 🚀 바로 다음에 구현해야 할 로드맵 (Immediate Next Action Items)
-- **`TSK-001-02`**: Supabase 실제 BaaS 연동 및 스키마/마이그레이션 설정
+- **`TSK-001-02`**: Supabase 실제 BaaS 연동 및 스키마/마이그레이션 설정 (이슈: [#4](https://github.com/ClarusIubar/GATTACA/issues/4))
   - 스토리지 인터페이스 규격에 맞춰 PostgreSQL 스키마(사용자, 메모리, 코멘트 테이블 등) 마이그레이션 및 RLS(Row Level Security) 실 가드 규칙 구축.
-- **`TSK-001-03`**: 카카오 OAuth 소셜 로그인 및 사용자 권한 가드 연동
+- **`TSK-001-03`**: 카카오 OAuth 소셜 로그인 및 사용자 권한 가드 연동 (이슈: [#5](https://github.com/ClarusIubar/GATTACA/issues/5))
   - 카카오 REST API 기반 인가 코드를 프론트엔드로 수신하고, 로그인 시 사용자 등급을 승인 대기 회원(`PENDING`) 상태로 신규 가입 및 가드 연동 구현.
+- **`TSK-001-04`**: Supabase Storage 기반 사진 메모리 업로드 및 CDN 최적화 연동 (이슈: [#6](https://github.com/ClarusIubar/GATTACA/issues/6))
+  - 프론트 이미지 파일 업로드 컴포넌트, 용량(5MB 제한) 및 MIME 포맷 검증 가드 로직 및 API 구현.
+- **`TSK-001-05`**: 운영자(ADMIN) 전용 회원 등급 승인 및 부적절 콘텐츠 삭제 UI 구현 (이슈: [#7](https://github.com/ClarusIubar/GATTACA/issues/7))
+  - 운영자 등급 판단 및 가입 대기 회원 승인 관리 대시보드 UI, 글/사진/코멘트 강제 영구 삭제 API 결합.
+- **`TSK-001-06`**: 모임 일정 확정 시 카카오 알림톡/메시지 템플릿 자동 발송 구현 (이슈: [#8](https://github.com/ClarusIubar/GATTACA/issues/8))
+  - 모임 일정 신규 개설 시 백엔드 Worker를 거쳐 멤버들 단톡방/개인톡으로 전송 알림톡 API 트리거 연동.
+- **`TSK-001-07`**: GitHub Actions CI/CD 워크플로우 구성 및 Cloudflare 자동 배포 활성화 (이슈: [#9](https://github.com/ClarusIubar/GATTACA/issues/9))
+  - 테스트 무결 검증 후 Pages/Workers 자동 무인 배포를 위한 CI/CD 워크플로우 파이프라인 구성.
 
 ## 운영 원칙
 - 단톡방의 결정은 단톡방에서 한다.
