@@ -14,6 +14,7 @@ import type { Session } from '@supabase/supabase-js'
 import { appEnv, isSupabaseConfigured } from './env'
 import { supabase } from './supabase'
 import { DemoRepository, SupabaseRepository, type MemoryTrainRepository } from './repository'
+import { sendKakaoMessage } from './notification'
 import type {
   AuthMode,
   CommentInput,
@@ -308,6 +309,23 @@ export function AppProvider({ children }: PropsWithChildren) {
     const writer = getWriter()
     await repository.createEvent(input, writer.id)
     await refreshData()
+
+    // 일정 확정 시 카카오 메시지 발송 비동기 트리거 연동 (논블로킹 백그라운드 실행)
+    void sendKakaoMessage(
+      {
+        text: `[추억열차] 새로운 모임 '${input.title}' 일정이 확정되어 타임라인에 등록되었습니다! 장소: ${input.location}`,
+        buttonTitle: '열차 타러가기',
+        buttonUrl: window.location.origin,
+      },
+      appEnv.supabaseAnonKey || null, // Access Token 대용으로 설정값 주입
+      true // Mock Mode 활성화하여 유연한 integration 보장
+    ).then((res) => {
+      if (!res.success) {
+        console.warn('카카오 알림톡 자동 전송 실패:', res.error)
+      } else {
+        console.log('카카오 알림톡 자동 전송 완료:', res.messageId)
+      }
+    })
   }
 
   async function updateEvent(eventId: string, input: EventInput) {
