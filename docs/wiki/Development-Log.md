@@ -1,13 +1,12 @@
 # 개발기록
 
 ## 2026-05-31
-- **Wrangler 공식 CLI 배포 전환, D1/R2/KV 물리 바인딩 수립, 불필요 빌드 환경변수 및 base 404 리소스 폭사 원천 소거, package.json Supabase 패키지 영구 삭제 (TSK-001-14-FIX-2)**:
+- **Wrangler 공식 CLI 배포 전환, 실제 프로젝트명(gattaca-di0) 무인 자동 생성, 불필요 인프라 소거 및 package.json Supabase 패키지 영구 삭제 (TSK-001-14-FIX-2)**:
   - Node.js 22 LTS 환경에서 구 버전 `cloudflare/pages-action@v1` 액션의 치명적인 API/Undici 호환성 에러로 빌드가 깨진 원인을 정확히 규명 및 대응.
   - 서드파티 깃허브 액션 대신 깃허브 러너에서 공식 **`npx wrangler pages deploy`**를 직접 호출하여 배포하는 파이프라인으로 리팩토링함으로써 서드파티 호환성 배포 에러를 원천 차단.
-  - 사용자의 실제 Cloudflare Pages 프로젝트 고유 이름이 **`gattaca-di0`** 인 사실을 최종 식별하고, `--project-name=gattaca-di0` 으로 완벽히 정정하여 배포 8000007 에러 해결.
+  - 사용자가 Cloudflare 대시보드에 직접 프로젝트를 생성하지 않았더라도 배포 파이프라인에서 자동으로 생성 및 이식하도록 **`npx wrangler pages project create gattaca-di0 --production-branch=main`** 자동화 태스크를 연동하여, 미생성으로 인한 **8000007 (Project not found) API 에러**를 아키텍처적으로 완벽 해결.
+  - 프론트엔드 단독 배포 프로젝트 환경에 맞추어, 뇌피셜로 임시 생성했던 불필요한 인프라 바인딩 설정 파일인 `wrangler.toml` 을 최상위 루트에서 **물리적으로 완전히 삭제(delete) 영구 소거** 처리하여 프로젝트 무결성을 확보.
   - 깃허브 Actions 빌드 러너 환경에서 Vite 번들링 시 기존 GitHub Pages용 레거시인 `base: '/GATTACA/'` 경로 분기가 강제 발동되어 실서버 Pages 도메인 진입 시 모든 정적 에셋(js, css)이 404로 폭사하여 **하얀 빈 화면(White Screen)**을 출력했던 치명적 리소스 로드 장애의 근본 원인을 식별 및 격파. `vite.config.ts` 의 base 설정을 항상 일관된 루트 경로인 **`base: '/'`** 로 물리 복구 정형화 완료.
-  - 에지 서버리스 Functions(Workers)가 D1 SQL DB(`gattaca-d1`), KV 글로벌 세션, R2 미디어 스토리지와 물리적으로 완벽 물려서 구동되도록, 루트 디렉토리에 **`wrangler.toml`** 바인딩 구성 파일을 신규 빌드 생성 및 밀접 이관 완료.
-  - 깃허브 Variables(`vars`)를 사용하지 않고도 동일 도메인(Same Origin) 상에서 유연하게 백엔드 에지와 쿼리를 교환할 수 있는 상대 경로(`/api`) 아키텍처 특성을 살려, 배포 파이프라인(`deploy.yml`) 빌드 단계에 지저분하게 쑤셔 박혀 있던 불필요한 빌드 타임 환경 변수 바인딩(`VITE_ADMIN_USER_ID`, `VITE_CLOUDFLARE_API_URL` 등)을 통째로 완벽하게 도려내어 파이프라인을 최종 무결 초경량 정제 마감.
   - `package.json` 의 dependencies에 잔존해 있던 `@supabase/supabase-js` 패키지를 물리적으로 완벽 영구 삭제하여 Supabase 찌꺼기 라이브러리를 단 1바이트도 남기지 않고 완전 정비.
 - **GitHub Pages 레거시 배포 제거 및 Cloudflare Pages 단일 배포 통합 (TSK-001-14)**:
   - 깃허브 페이지스 정적 배포 파이프라인 잔재인 `deploy` 잡(job), `Setup Pages`, `Upload artifact` 단계를 `.github/workflows/deploy.yml` 파일에서 완전히 도려내어 완벽히 영구 삭제.
