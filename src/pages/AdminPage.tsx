@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Navigate } from 'react-router-dom'
 import { useAppContext } from '../lib/app-context'
 import { formatDateTime } from '../lib/format'
 
@@ -11,11 +12,7 @@ export function AdminPage() {
   )
 
   if (!isAdmin) {
-    return (
-      <section className="shell section">
-        <div className="empty-card">운영자만 접근할 수 있는 페이지입니다.</div>
-      </section>
-    )
+    return <Navigate to="/" replace />
   }
 
   return (

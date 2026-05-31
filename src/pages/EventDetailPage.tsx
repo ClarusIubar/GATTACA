@@ -153,7 +153,11 @@ export function EventDetailPage() {
                 {isAdmin ? (
                   <button
                     className="danger-button"
-                    onClick={() => void deleteEvent(eventRecord.id)}
+                    onClick={() => {
+                      if (window.confirm('정말로 이 일정을 영구 삭제하시겠습니까?')) {
+                        void deleteEvent(eventRecord.id)
+                      }
+                    }}
                     type="button"
                   >
                     이벤트 삭제
@@ -306,7 +310,11 @@ export function EventDetailPage() {
                         {isAdmin ? (
                           <button
                             className="danger-button"
-                            onClick={() => void deleteMemory(memory.id)}
+                            onClick={() => {
+                              if (window.confirm('정말로 이 메모리를 영구 삭제하시겠습니까?')) {
+                                void deleteMemory(memory.id)
+                              }
+                            }}
                             type="button"
                           >
                             메모리 삭제
@@ -485,7 +493,11 @@ export function EventDetailPage() {
                                 {isAdmin ? (
                                   <button
                                     className="danger-button"
-                                    onClick={() => void deleteComment(comment.id)}
+                                    onClick={() => {
+                                      if (window.confirm('정말로 이 코멘트를 영구 삭제하시겠습니까?')) {
+                                        void deleteComment(comment.id)
+                                      }
+                                    }}
                                     type="button"
                                   >
                                     코멘트 삭제
