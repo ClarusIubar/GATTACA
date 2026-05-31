@@ -40,11 +40,9 @@
    - **Framework preset**: `Vite`
    - **Build command**: `npm run build`
    - **Build output directory**: `dist`
-3. **[Build Environment Variables]**에 다음 환경 변수들을 바인딩합니다:
-   - `VITE_SUPABASE_URL` : Supabase 프로젝트 URL 주소
-   - `VITE_SUPABASE_ANON_KEY` : Supabase Anon 퍼블릭 키
+3. **[Build Environment Variables]** 또는 **GitHub Variables (vars)**에 다음 환경 변수들을 바인딩합니다:
+   - `VITE_CLOUDFLARE_API_URL` : 백엔드 Worker 도메인 주소 (`https://gattaca-backend.your-subdomain.workers.dev`)
    - `VITE_ADMIN_USER_ID` : 운영자 1인의 고유 ID 문자열
-   - `VITE_API_BASE_URL` : 백엔드 Worker 도메인 주소 (`https://gattaca-backend.your-subdomain.workers.dev`)
 
 > [!NOTE]
 > SPA 라우팅의 새로고침 404 오류 방지를 위해 `public/_redirects` 파일이 정상 배포본에 바인딩되어 있으며 자동으로 Cloudflare Edge 서버가 200 리디렉션을 제어합니다.
@@ -53,7 +51,7 @@
 
 ## 3. ⚡ Cloudflare Workers를 통한 백엔드 API Gateway 배포
 
-카카오 API 비밀 키 은닉 및 Supabase 어드민 권한 처리를 프록시하는 Worker 백엔드 배포 가이드입니다.
+카카오 API 비밀 키 은닉 및 D1/R2/KV 연동을 처리하는 에지 Workers 백엔드 서버리스 가이드입니다.
 
 1. **Wrangler CLI 설정**:
    - `wrangler.toml` 환경 구성 파일을 루트에 배치하고, Node.js 서버리스 배포 코드를 확인합니다.
@@ -63,9 +61,9 @@
    npx wrangler deploy
    ```
 3. **보안 시크릿 키 주입 (Secrets)**:
-   API 마스터 비밀번호 등급의 키들은 다음 wrangler 명령어로 Workers 보안 비밀 컨테이너에 주입하여 환경변수로 활용합니다:
+   카카오 로그인 및 비동기 알림톡 메시지 API 마스터 비밀번호 등급의 키들은 다음 wrangler 명령어로 Workers 보안 비밀 컨테이너에 주입하여 환경변수로 활용합니다:
    ```bash
-   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+   npx wrangler secret put KAKAO_REST_API_KEY
    npx wrangler secret put KAKAO_CLIENT_SECRET
    ```
 
@@ -77,6 +75,8 @@
 
 - Cloudflare API Token 발급 방법
 - GitHub Actions Secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) 바인딩 방법
-- Supabase `service_role` 및 Kakao `Client Secret` 발급 후 Worker에 Secrets 주입하는 방법
+- GitHub Actions Variables (`CLOUDFLARE_API_URL`, `ADMIN_USER_ID`) 등록 방법
+- Cloudflare Workers Secrets (`KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`) 주입 방법
 
 위 핵심 보안 세팅의 모든 메뉴별 클릭 경로와 초정밀 가이드는 **[Infrastructure-Specification (인프라 사양 및 연동 가이드)](Infrastructure-Specification)** 위키 문서에 그림을 보듯 상세히 기재되어 있으므로 반드시 참고하여 설정을 마무리하십시오.
+

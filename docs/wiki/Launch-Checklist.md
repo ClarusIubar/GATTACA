@@ -17,25 +17,27 @@
 ## 2. 🌐 Pages 기본형 공개 및 배포 자동화
 - [x] **Git 형상 갱신**: `main` 브랜치에 R1 품질 코드가 정상적으로 푸시(Push) 및 머지 완료.
 - [ ] **GitHub Actions 배포 자동화**: `.github/workflows/deploy.yml` 성공적 마운트 및 구동 확인.
-- [ ] **GitHub Pages URL 검증**: 환경변수 주입 없이도 기본적으로 `데모 모드` 구조가 에러 없이 구동되는지 검증.
+- [ ] **Cloudflare Pages URL 검증**: 환경변수 주입 없이도 기본적으로 `데모 모드` 구조가 에러 없이 구동되는지 검증.
 
 ---
 
-## 3. 🛡️ 실사용 BaaS 및 소셜 보안 연결 (차기 과제)
-- [ ] **Supabase DB 스키마 적용**: `docs/sql/schema.sql` 쿼리를 사용해 SQL Editor에서 테이블 3종 생성 및 RLS 정책 바인딩 완료.
-- [ ] **Storage 버킷 구축**: `memory-images` Public 버킷 생성 및 5MB 제한 RLS 업로드 정책 세팅 완료.
-- [ ] **카카오 Developers 연동**: 카카오 플랫폼에 Web Redirect URI 및 JavaScript/REST 키 발급 매핑 완료.
+## 3. 🛡️ 실사용 Cloudflare Native & 소셜 보안 연결
+- [ ] **Cloudflare D1 SQL 스키마 적용**: D1 SQL 대시보드 또는 Wrangler CLI 마이그레이션을 통해 멤버, 이벤트, 메모리, 코멘트 테이블 빌드 및 제약 조건 검증 완료.
+- [ ] **R2 Storage 버킷 구축**: `memory-photos` Public 버킷 생성 및 CORS/MIME 업로드 제약 사항 세팅 완료.
+- [ ] **KV Namespace 바인딩**: 글로벌 엣지 분산 세션 스토리지를 위한 `SESSION` 네임스페이스 바인딩 구성 완료.
+- [ ] **카카오 Developers 연동**: 카카오 플랫폼에 Web Redirect URI 및 REST API 키 발급 매핑 완료.
 - [ ] **Cloudflare Workers API 배포**: 백엔드 Proxy API Worker 서버 배포 완료 (`npx wrangler deploy`).
-- [ ] **Secrets 키 변수 주입**:
-  - [ ] GitHub Repository Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` 주입.
-  - [ ] Cloudflare Workers Secrets: `SUPABASE_SERVICE_ROLE_KEY`, `KAKAO_CLIENT_SECRET` 주입.
+- [ ] **Secrets & Variables 키 변수 주입**:
+  - [ ] GitHub Actions Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` 등록 (배포 권한 2개).
+  - [ ] GitHub Actions Variables (vars): `CLOUDFLARE_API_URL`, `ADMIN_USER_ID` 등록.
+  - [ ] Cloudflare Workers Secrets: `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET` 등록.
 
 ---
 
 ## 4. 🧪 최종 프로덕션 실사용 시나리오 검증
 - [ ] **Pending 가입 검증**: 최초 카카오 로그인 시 사용자가 `PENDING` 등급으로 안전하게 데이터베이스에 가입 신청/가드되는지 확인.
-- [ ] **승인 회원 가동성**: 운영자가 등급을 `APPROVED`로 변경한 후, 모임 일정 추가 및 사진, 코멘트 등록이 RLS 보안 필터를 뚫고 실서버에 적재되는지 검증.
-- [ ] **운영자 전면 통제**: `ADMIN` 계정을 통해 불적절한 일정/댓글이 DB에서 즉각 삭제되는지 확인.
+- [ ] **승인 회원 가동성**: 운영자가 등급을 `APPROVED`로 변경한 후, 모임 일정 추가 및 사진, 코멘트 등록이 보안 필터를 뚫고 실서버에 적재되는지 검증.
+- [ ] **운영자 전면 통제**: `ADMIN` 계정을 통해 불적절한 일정/댓글이 D1 DB에서 즉각 삭제되는지 확인.
 
 ---
 
@@ -50,25 +52,18 @@
 4. **[Rollback to this deployment]** (이 배포 버전으로 롤백) 메뉴를 클릭하고 확인을 선택합니다.
 5. **결과**: 단 5초 이내에 글로벌 Edge CDN 캐시가 이전 버전으로 지시 및 강제 매핑되어, 서버 중단이나 유저 리포트 폭증 없이 안전하게 원복 완료됩니다.
 
-### [B] DB 스키마 마이그레이션 실패 시 스키마 롤백 (Supabase SQL)
-1. Supabase Dashboard ➡️ **[SQL Editor]**로 진입합니다.
-2. 새로운 SQL 쿼리창을 열고 아래의 **롤백 DDL 스크립트**를 입력한 후 **[Run]**을 실행하여 데이터베이스의 RLS 가드 및 테이블들을 직전 정상 스키마 상태로 물리적 복구합니다.
+### [B] DB 스키마 마이그레이션 실패 시 스키마 롤백 (Cloudflare D1 SQL)
+1. Cloudflare Dashboard ➡️ **[D1 Databases]** ➡️ `gattaca-d1` 데이터베이스 진입 ➡️ **[Console]** 혹은 wrangler CLI로 스키마 복구.
+2. wrangler를 사용하는 경우 아래 롤백 SQL 스크립트를 사용하여 D1 SQLite 테이블들의 제약 조건을 이전 상태로 복구 및 테이블 드롭 처리를 진행합니다.
 ```sql
--- 테이블 구조 전면 롤백 복원 스크립트
-DROP POLICY IF EXISTS "Allow all select comments" ON public.comments;
-DROP POLICY IF EXISTS "Allow approved members insert comments" ON public.comments;
-DROP POLICY IF EXISTS "Allow all select memories" ON public.memories;
-DROP POLICY IF EXISTS "Allow approved members insert memories" ON public.memories;
-DROP POLICY IF EXISTS "Allow only admin delete memories" ON public.memories;
-DROP POLICY IF EXISTS "Allow members profile insert" ON public.members;
-DROP POLICY IF EXISTS "Allow members profile select" ON public.members;
-DROP POLICY IF EXISTS "Allow only admin update members" ON public.members;
-
-DROP TABLE IF EXISTS public.comments CASCADE;
-DROP TABLE IF EXISTS public.memories CASCADE;
-DROP TABLE IF EXISTS public.members CASCADE;
+-- D1 SQLite 테이블 롤백 및 초기화 스크립트
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS memories;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS members;
 ```
 
 ---
 
 상세한 환경변수 설정 및 시크릿 키 획득 경로는 [Infrastructure-Specification](Infrastructure-Specification) 가이드를 참고하십시오.
+

@@ -1,6 +1,9 @@
 # 개발기록
 
 ## 2026-05-31
+- **GitHub Pages 레거시 배포 제거 및 Cloudflare Pages 단일 배포 통합 (TSK-001-14)**:
+  - 깃허브 페이지스 정적 배포 파이프라인 잔재인 `deploy` 잡(job), `Setup Pages`, `Upload artifact` 단계를 `.github/workflows/deploy.yml` 파일에서 완전히 도려내어 완벽히 영구 삭제.
+  - 배포 파이프라인의 명칭을 `Deploy to Cloudflare Pages` 로 최종 갱신하고, 오직 Cloudflare Pages 실서버로만 정적 에셋 빌드/배포를 단일 전담 수행하도록 워크플로우를 완벽하게 최적화 및 정밀 재수립 완료.
 - **Supabase 제거에 따른 컴파일 빌드 실패 오류 대응 및 복구 정비 (TSK-001-13-FIX)**:
   - Supabase 완전 제거 리팩토링 후 `npm run build` 컴파일 중 4건의 타입스크립트 에러 발생 사실 확인 및 투명한 대응 수행.
   - **TS6133 & TS2304 (app-context.tsx)**: Supabase 세션 메타데이터 번역기인 `getProfileFromMetadata` 미사용 선언 및 `Session` 타입 부재 오류 확인 후, 해당 함수를 완전 삭제하여 컴파일 오류 해결.
@@ -58,9 +61,9 @@
 - **모임 일정 확정 시 카카오 알림톡/메시지 비동기 자동 발송 구현 완료 (TSK-001-06)**:
   - notification.ts 모듈 신규 설계 및 createEvent 완료 콜백 논블로킹 트리거 바인딩 성공.
   - 21개 통합/단위 Vitest 테스트 통과 및 거버넌스 CLOSED 공식 마감 완료.
-- **GitHub Actions 및 Pages/Cloudflare Pages 양방향 무인 CI/CD 파이프라인 수립 완료 (TSK-001-07)**:
-  - deploy.yml 작성 완료. 빌드 전 21개 Vitest 테스트 통과 강제화 제약 완비.
-  - VITE_ 환경변수(GitHub Secrets)와 Cloudflare API Token 배포 보안 격리 수립 완료 및 거버넌스 CLOSED 공식 마감 완료.
+- **GitHub Actions 및 Cloudflare Pages 무인 CI/CD 파이프라인 수립 완료 (TSK-001-07)**:
+  - deploy.yml 작성 완료. 빌드 전 19개 Vitest 테스트 통과 강제화 제약 완비.
+  - VITE_ 환경변수(GitHub Variables)와 Cloudflare API Token 배포 보안 격리 수립 완료 및 거버넌스 CLOSED 공식 마감 완료.
 - **Parent Core Issue `#2` (TSK-001-00) 대단원으로 CLOSED 공식 마감 완료**.
 
 ## 2026-05-01
