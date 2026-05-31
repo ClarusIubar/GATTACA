@@ -1,6 +1,10 @@
 # 개발기록
 
 ## 2026-05-31
+- **GitHub Secrets VITE 접두사 배제 연동 및 CI/CD 워크플로우 정비 (TSK-001-10)**:
+  - 깃허브 저장소 Secrets의 `VITE_` 프레임워크 종속성 접두사 배제 정책 수립.
+  - GitHub Actions 워크플로우 `deploy.yml`을 수정하여 깃허브 시크릿 표준명(`CLOUDFLARE_API_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ADMIN_USER_ID`)을 Vite 클라이언트 빌드 전용 VITE_ 환경변수로 자동 매핑 매칭 처리 완료.
+  - `docs/wiki/Infrastructure-Specification.md` 위키 문서에 인프라 Secrets 명명 규칙 개정 및 빌드/배포 환경변수 주입 경계 반영 완료.
 - **Cloudflare Pages CI/CD 통합 배포 파이프라인 수립 및 보안 경계 최신화 (TSK-001-09)**:
   - GitHub Actions 워크플로우(`deploy.yml`)의 빌드 단계(`npm run build`)에 `VITE_CLOUDFLARE_API_URL` 빌드 타임 환경 변수 자동 주입 코드 연동 완료.
   - 사용자가 GitHub Secrets에 Cloudflare 배포 토큰 및 계정 식별 키(`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`)와 API 엔드포인트 환경 변수를 통합 탑재함에 따라, 로컬 환경 수동 기재를 전면 배제한 원스톱 빌드 및 배포 무인화 구축.
