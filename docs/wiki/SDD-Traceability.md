@@ -41,10 +41,12 @@
 ## TSK-002-14 Evidence
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/38
+- PR: https://github.com/ClarusIubar/GATTACA/pull/40
 - Follow-up channel issue: https://github.com/ClarusIubar/GATTACA/issues/39
 - Scope: 이벤트 저장에서 Kakao relay 자동 호출을 제거한다.
 - Test seam: Cloudflare AppContext test가 event POST 성공과 `sendKakaoMessage` 미호출을 검증한다.
 - Policy: Kakao 알림은 별도 채널 등록과 명시 전송 기능에서만 다룬다.
+- Live readback: production `/submit` asset에 기존 부분 성공 메시지와 `/api/notifications/kakao-event` marker가 없다.
 
 ## TSK-002-10 Follow-up
 
