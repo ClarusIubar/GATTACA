@@ -1,7 +1,23 @@
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 export type UserRole = 'admin' | 'member'
 export type DemoPersona = 'guest' | 'pending' | 'approved' | 'admin'
-export type AuthMode = 'demo' | 'cloudflare'
+export type AuthMode = 'demo' | 'cloudflare' | 'setup'
+
+export interface RuntimeStatus {
+  ok: boolean
+  service: string
+  timestamp: string
+  bindings: {
+    db: boolean
+    session: boolean
+    bucket: boolean
+  }
+  auth: {
+    kakaoRestApiKeyConfigured: boolean
+    kakaoClientSecretConfigured: boolean
+    kakaoOAuthConfigured: boolean
+  }
+}
 
 export interface UserProfile {
   id: string

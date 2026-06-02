@@ -27,7 +27,53 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Sync Worker Secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${KAKAO_REST_API_KEY:-}" ]; then
+            printf '%s' "$KAKAO_REST_API_KEY" | npx wrangler secret put KAKAO_REST_API_KEY
+          else
+            echo "KAKAO_REST_API_KEY is not set in GitHub Secrets. Skipping Worker secret sync."
+          fi
+
+          if [ -n "${KAKAO_CLIENT_SECRET:-}" ]; then
+            printf '%s' "$KAKAO_CLIENT_SECRET" | npx wrangler secret put KAKAO_CLIENT_SECRET
+          else
+            echo "KAKAO_CLIENT_SECRET is not set in GitHub Secrets. Skipping Worker secret sync."
+          fi
+
+      - name: Deploy Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          output="$(npx wrangler versions upload --config wrangler.ci.toml --keep-vars=true --message "GitHub Actions upload ${GITHUB_SHA}" 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
+          version_id="$(printf '%s\n' "$output" | sed -n 's/^Worker Version ID: //p' | tail -n 1)"
+          if [ -z "$version_id" ]; then
+            echo "Could not detect Worker Version ID from wrangler versions upload output."
+            exit 1
+          fi
+          npx wrangler versions deploy "${version_id}@100" --config wrangler.ci.toml --yes --message "GitHub Actions deploy ${GITHUB_SHA}"
+
       - name: Build
+        env:
+          VITE_CLOUDFLARE_API_URL: https://gattaca.jamissue.com
+          VITE_ENABLE_DEMO_MODE: "false"
         run: npm run build
 
       - name: Create Cloudflare Pages Project
@@ -35,10 +81,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          npx wrangler pages project create gattaca-di0 --production-branch=main || echo "Project already exists"
+          npx wrangler pages project create gattaca --production-branch=main || echo "Project already exists"
 
       - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler pages deploy ./dist --project-name=gattaca-di0
+        run: npm run pages:deploy

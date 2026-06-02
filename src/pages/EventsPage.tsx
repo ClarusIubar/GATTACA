@@ -11,7 +11,7 @@ export function EventsPage() {
       <div className="section-heading">
         <span className="section-heading__eyebrow">Timeline</span>
         <h2>이벤트 기록 목록</h2>
-        <p>단체방에서 결정된 일정이 시간순으로 쌓이며, 이후 사진과 코멘트가 이어집니다.</p>
+        <p>단체방에서 결정된 일정은 시간 순으로 쌓이고, 이후 사진과 코멘트가 이어집니다.</p>
       </div>
 
       <div className="timeline">
@@ -26,7 +26,7 @@ export function EventsPage() {
               <div className="timeline-card__meta">
                 <span className="pill">{formatDateTime(event.eventAt)}</span>
                 <span>{event.location}</span>
-                <span>등록자: {resolveProfileName(event.createdBy, profiles)}</span>
+                <span>등록자 {resolveProfileName(event.createdBy, profiles)}</span>
               </div>
               <h3>{event.title}</h3>
               <p>{event.decisionSummary}</p>

@@ -1,40 +1,90 @@
 # 추억열차 Wiki
 
-추억열차는 카카오톡 단체방에서 확정된 일정과 행사 후 추억을 기록하는 메모리얼 웹앱입니다.
+추억열차는 카카오톡 단체방에서 이미 결정된 일정과 그날의 사진, 코멘트를 남기는 메모리얼 서비스입니다.
+
+현재 구현은 GitHub Wiki의 기획 의도 기준으로 다음 범위까지 도달했습니다.
+
+- Cloudflare Pages 프론트엔드
+- Cloudflare Workers 백엔드
+- D1 기반 이벤트 / 메모리 / 코멘트 CRUD
+- KV 기반 세션
+- R2 기반 사진 업로드
+- 승인 사용자 CRU / 운영자 delete 권한 강제
+- Kakao OAuth 및 Kakao relay 경계 구현
+
+마지막 남은 단계는 실제 Kakao Worker secrets 주입과 live OAuth 수신 검증입니다.
 
 ## 빠른 링크
+
 - PRD: [PRD](PRD)
 - 설계/아키텍처: [Architecture](Architecture)
-- 개발기록: [Development-Log](Development-Log)
-- 운영정책: [Operations-Policy](Operations-Policy)
-- 배포/환경설정: [Deployment-Setup](Deployment-Setup)
+- 인프라 명세: [Infrastructure-Specification](Infrastructure-Specification)
+- 배포 설정: [Deployment-Setup](Deployment-Setup)
+- Kakao 키 설정: [Kakao-Credential-Setup](Kakao-Credential-Setup)
 - 런치 체크리스트: [Launch-Checklist](Launch-Checklist)
-- 인프라 사양 및 연동 가이드: [Infrastructure-Specification](Infrastructure-Specification)
+- 운영 정책: [Operations-Policy](Operations-Policy)
+- 개발 기록: [Development-Log](Development-Log)
+- Kakao relay 상태: [Kakao-Relay-Status](Kakao-Relay-Status)
 
-## 지금 바로 볼 수 있는 것
-- Cloudflare Pages에 현재 코드를 배포하면 비민감 환경변수가 없더라도 기본적으로 **데모 모드(Demo Mode)**가 즉각 구동되어 빠르게 열람 및 체험이 가능합니다.
-- 데모 모드에서는 화면 구조, 라우팅, 가상 권한 상태 전환, 이벤트/메모리/코멘트 생성/조회 등 전체 UX 흐름을 실시간으로 확인해볼 수 있습니다.
+## 현재 live 상태
 
-## 실사용 연결 방법
-- 다음 자격 증명 및 설정 값을 알맞게 세팅하면 완벽한 실사용 운영 모드가 활성화됩니다.
-  - **GitHub Secrets**:
-    - `CLOUDFLARE_API_TOKEN` (Cloudflare Pages 배포 러너 인증용)
-    - `CLOUDFLARE_ACCOUNT_ID` (Cloudflare Pages 배포 대상 계정 식별용)
-  - **GitHub Variables (vars)**:
-    - `CLOUDFLARE_API_URL` (Cloudflare Workers 백엔드 에이전트 주소)
-    - `ADMIN_USER_ID` (운영자의 고유 ID 문자열)
-  - **Cloudflare Workers Secrets**:
-    - `KAKAO_REST_API_KEY` (카카오 API 키)
-    - `KAKAO_CLIENT_SECRET` (카카오 OAuth 시크릿 키)
+- Pages latest verified deployment:
+  - [https://61610380.gattaca-di0.pages.dev/](https://61610380.gattaca-di0.pages.dev/)
+- Worker verified health:
+  - [https://gattaca-backend.yhh4433.workers.dev/api/health](https://gattaca-backend.yhh4433.workers.dev/api/health)
+- Worker runtime readiness:
+  - [https://gattaca-backend.yhh4433.workers.dev/api/runtime-status](https://gattaca-backend.yhh4433.workers.dev/api/runtime-status)
 
-## 핵심 아키텍처 및 구현 완료 범위 (R1)
-1. **의존성 역전 원칙(DIP) 기반 설계**: UI 비즈니스 정책 레이어와 실제 스토리지 기술을 인터페이스로 완전히 물리 격리.
-2. **Cloudflare Native 마이그레이션**: D1 SQL 데이터베이스, R2 스토리지 업로드, KV 글로벌 세션 연동으로 수평 마이그레이션 및 Supabase 의존성 100% 완전 소거.
-3. **5단계 다차원 TDD 검증망**: 단위/통합/회귀/스모크/E2E 시나리오로 완벽하게 다져진 19개 자동 테스트 스위트 통과 완료.
-4. **Cloudflare Pages 단일 배포 정착**: 무인 CI/CD 배포 파이프라인에서 불필요한 GitHub Pages 레거시 잔재를 전면 삭제하고 오직 Cloudflare Pages로 빌드/배포를 일원화 정착.
+현재 `runtime-status` 기준:
 
-## 운영 원칙
-- 단톡방의 결정은 단톡방에서 한다.
-- 추억열차는 결정된 결과를 기억으로 정리한다.
-- 승인된 사용자만 작성 가능하고, 운영자만 삭제한다.
+- `bindings.db = true`
+- `bindings.session = true`
+- `bindings.bucket = true`
+- `auth.kakaoRestApiKeyConfigured = false`
+- `auth.kakaoClientSecretConfigured = false`
+- `auth.kakaoOAuthConfigured = false`
 
+즉 Cloudflare 인프라는 live로 붙어 있지만, Kakao OAuth secret은 아직 주입되지 않았습니다.
+
+## 지금 가능한 것
+
+- 공개 페이지 렌더링 확인
+- 이벤트 / 메모리 / 코멘트 구조 확인
+- production에서 demo fallback 없이 live 배포 상태 확인
+- Kakao 미구성 상태가 UI에서 명확히 드러나는지 확인
+
+## 아직 남아 있는 것
+
+- 실제 Kakao 로그인 redirect/callback
+- live 세션 생성 readback
+- 실제 Kakao memo relay 수신 확인
+
+이 단계는 Cloudflare Worker secrets 주입 후 바로 검증할 수 있습니다.
+
+## 필요한 설정값
+
+GitHub Secrets:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Frontend local/manual build env:
+
+- `VITE_CLOUDFLARE_API_URL`
+- `VITE_ADMIN_USER_ID` (선택)
+- `VITE_ENABLE_DEMO_MODE`
+
+Worker vars/secrets:
+
+- `ADMIN_AUTH_USER_ID` (선택)
+- `KAKAO_REST_API_KEY`
+- `KAKAO_CLIENT_SECRET`
+
+## 구현 완료 경계
+
+현재 평가는 다음과 같습니다.
+
+- "카카오 API만 붙이면 되는 수준"까지는 이미 도달
+- 실제 Kakao account 기준 end-to-end 완료는 아직 미검증
+
+따라서 지금은 완료 직전 상태이고, 남은 것은 secret 주입 후 live readback입니다.

@@ -29,7 +29,7 @@ export function SubmitPage() {
     try {
       await createEvent(form)
       setForm(defaultForm)
-      setFeedback('이벤트가 등록되었습니다. 상세 페이지에서 추억 기록을 이어갈 수 있습니다.')
+      setFeedback('이벤트를 등록했습니다. 상세 페이지에서 추억 기록을 이어갈 수 있습니다.')
       navigate('/events')
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : '일정 등록에 실패했습니다.')
@@ -45,7 +45,7 @@ export function SubmitPage() {
           <div className="section-heading">
             <span className="section-heading__eyebrow">Schedule log</span>
             <h2>확정된 일정 등록</h2>
-            <p>캘린더 대신 하나의 기록 카드로 남깁니다. 무엇을, 어디서, 어떻게 할지 분명히 적어주세요.</p>
+            <p>캘린더 대신 하나의 기록 카드로 남깁니다. 무엇을, 어디서, 어떻게 할지 분명하게 적어주세요.</p>
           </div>
 
           <form className="form-grid" onSubmit={handleSubmit}>
@@ -55,7 +55,7 @@ export function SubmitPage() {
                 id="title"
                 value={form.title}
                 onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-                placeholder="예: 봄 소풍, 기념일 모임"
+                placeholder="예: 봄 소풍, 기념 모임"
                 required
               />
             </div>
@@ -67,9 +67,7 @@ export function SubmitPage() {
                   id="eventAt"
                   type="datetime-local"
                   value={form.eventAt}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, eventAt: event.target.value }))
-                  }
+                  onChange={(event) => setForm((current) => ({ ...current, eventAt: event.target.value }))}
                   required
                 />
               </div>
@@ -79,10 +77,8 @@ export function SubmitPage() {
                 <input
                   id="location"
                   value={form.location}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, location: event.target.value }))
-                  }
-                  placeholder="예: 서울숲 3번 출구"
+                  onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
+                  placeholder="예: 서울역 3번 출구"
                   required
                 />
               </div>
@@ -94,7 +90,7 @@ export function SubmitPage() {
                 id="what"
                 value={form.what}
                 onChange={(event) => setForm((current) => ({ ...current, what: event.target.value }))}
-                placeholder="이번 모임에서 할 핵심 활동을 적어주세요."
+                placeholder="이번 모임에서 함께 할 활동을 적어주세요."
                 required
               />
             </div>
@@ -115,10 +111,8 @@ export function SubmitPage() {
               <textarea
                 id="decisionSummary"
                 value={form.decisionSummary}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, decisionSummary: event.target.value }))
-                }
-                placeholder="단톡방에서 최종 확정된 내용을 한 문단으로 요약해주세요."
+                onChange={(event) => setForm((current) => ({ ...current, decisionSummary: event.target.value }))}
+                placeholder="단체방에서 최종 확정된 내용을 한 문단으로 요약해주세요."
                 required
               />
             </div>
@@ -140,13 +134,11 @@ export function SubmitPage() {
           </div>
           <ul className="rail-list">
             <li>카카오톡 단체방에서 이미 결정된 일정</li>
-            <li>운영자가 추후에도 이해할 수 있는 요약 문장</li>
-            <li>당일 메모리와 코멘트가 이어질 수 있는 맥락</li>
+            <li>운영자가 나중에도 이해할 수 있는 요약 문장</li>
+            <li>행사 후 메모리와 코멘트가 이어질 수 있는 맥락</li>
           </ul>
           <p className="muted">
-            {canWrite
-              ? '현재 계정은 일정 등록 권한을 가지고 있습니다.'
-              : '승인된 사용자만 일정을 등록할 수 있습니다.'}
+            {canWrite ? '현재 계정은 일정 등록 권한을 가지고 있습니다.' : '승인된 사용자만 일정을 등록할 수 있습니다.'}
           </p>
         </aside>
       </div>

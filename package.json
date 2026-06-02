@@ -7,8 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "live:check": "node scripts/live-check.mjs",
+    "live:check:kakao": "node scripts/live-check.mjs --require-kakao",
+    "pages:deploy": "node scripts/deploy-pages.mjs --project-name=gattaca --branch main",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "worker:deploy:dry-run": "wrangler deploy --dry-run",
+    "worker:deploy": "wrangler deploy"
   },
   "dependencies": {
     "react": "^19.2.5",
@@ -32,6 +37,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "wrangler": "^4.96.0"
   }
 }

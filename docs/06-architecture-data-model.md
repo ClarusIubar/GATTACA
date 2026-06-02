@@ -1,25 +1,29 @@
 # 06. 아키텍처와 데이터 모델
 
 ## 아키텍처 스타일
-- 정적 프론트엔드 + BaaS 조합의 서버리스 구조
+
+- 정적 프론트엔드 + Worker 백엔드 + Cloudflare 데이터스토어 조합
 - 선택 이유:
-  - GitHub Pages로 프론트엔드 비용을 낮출 수 있음
-  - Supabase가 인증, DB, 스토리지, RLS를 함께 제공
-  - 운영자 1인 프로젝트에 적합한 단순 구조
+  - Pages와 Workers로 프론트/백엔드를 분리해 배포 가능
+  - D1, R2, KV로 일정/메모리/세션을 단순하게 분리 가능
+  - Kakao OAuth와 relay를 브라우저가 아닌 서버 경계에서 처리 가능
 
 ## 시스템 구성도
 
 ```mermaid
 flowchart LR
-  A["Browser (GitHub Pages)"] --> B["React App"]
-  B --> C["Supabase Auth (Kakao Login)"]
-  B --> D["Supabase Postgres"]
-  B --> E["Supabase Storage"]
-  F["KakaoTalk Group Chat"] --> G["Manual decision flow"]
-  G --> B
+  A["Browser (Cloudflare Pages)"] --> B["React App"]
+  B --> C["Cloudflare Worker API"]
+  C --> D["D1 (profiles/events/memories/comments)"]
+  C --> E["KV (sessions)"]
+  C --> F["R2 (uploads)"]
+  C --> G["Kakao OAuth / Memo API"]
+  H["KakaoTalk Group Chat"] --> I["Manual decision flow"]
+  I --> B
 ```
 
 ## 주요 엔티티와 관계
+
 - `profiles`
   - `id`
   - `auth_user_id`
@@ -51,19 +55,22 @@ flowchart LR
   - `created_at`
 
 ## 핵심 제약 조건
-- GitHub Pages는 정적 호스팅만 담당
-- 인증은 Supabase Kakao OAuth를 통해 처리
-- 승인 여부는 앱 로직과 RLS 정책 양쪽에서 확인
+
+- Pages는 프론트 정적 호스팅만 담당
+- 인증과 권한은 Worker가 최종 강제
+- 승인 여부는 세션 + D1 profile 기준으로 판정
 - delete는 운영자만 가능
+- 브라우저는 Kakao API를 직접 호출하지 않음
 
 ## 품질 속성
+
 - 보안:
-  - RLS 필수
-  - 운영자 ID 환경변수 별도 관리
+  - Kakao secret은 Worker secret으로만 관리
+  - request body의 작성자 필드는 권한 근거로 사용하지 않음
 - 성능:
-  - 이벤트/메모리/코멘트는 단순 select 기반으로 초기 구현
+  - 이벤트/메모리/코멘트는 단순 CRUD 구조 유지
 - 장애 대응:
-  - Supabase 미설정 시 데모 모드로 폴백
-  - 네트워크 오류는 배너로 표기
+  - Worker secret 미구성 시 `runtime-status`와 UI 배너로 상태 명시
+  - 네트워크 오류는 사용자 메시지로 표기
 - 확장성:
-  - 카카오 자동화는 차후 별도 계층으로 확장 가능
+  - 카카오 자동화 범위를 늘리더라도 Worker relay 경계를 유지
