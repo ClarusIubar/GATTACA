@@ -171,8 +171,8 @@ export function EventDetailPage() {
 
   return (
     <section className="shell section">
-      <div className="two-column">
-        <div className="grid">
+      <div className="detail-layout">
+        <main className="detail-main">
           <article className="panel event-hero-card">
             <div className="event-header">
               <div className="event-meta">
@@ -447,11 +447,7 @@ export function EventDetailPage() {
                             메모리 수정
                           </button>
                           {isAdmin ? (
-                            <button
-                              className="danger-button"
-                              onClick={() => void deleteMemory(memory.id)}
-                              type="button"
-                            >
+                            <button className="danger-button" onClick={() => void deleteMemory(memory.id)} type="button">
                               메모리 삭제
                             </button>
                           ) : null}
@@ -550,7 +546,7 @@ export function EventDetailPage() {
                               onChange={(eventObject) =>
                                 setCommentForm((current) => ({ ...current, [memory.id]: eventObject.target.value }))
                               }
-                              placeholder="그날의 후기를 짧게 남겨주세요."
+                              placeholder="그날의 공기를 짧게 남겨주세요."
                             />
                           </label>
                           <button className="secondary-button" type="submit">
@@ -564,13 +560,13 @@ export function EventDetailPage() {
               })}
             </div>
           </article>
-        </div>
+        </main>
 
         <aside className="panel memory-submit-panel">
           <div className="section-heading">
             <span className="section-heading__eyebrow">Add memory</span>
             <h2>이 정거장에 장면 남기기</h2>
-            <p>사진 파일 또는 URL을 넣고, 그 순간의 설명을 함께 남깁니다.</p>
+            <p>사진 파일 또는 URL을 넣고, 그 시간을 설명과 함께 남깁니다.</p>
           </div>
 
           <form className="form-grid" onSubmit={handleMemorySubmit}>
