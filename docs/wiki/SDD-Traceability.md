@@ -21,6 +21,12 @@
 - Test seam: E2E가 `날짜`와 `시간` 입력을 별도로 채운다.
 - Required live readback: production `/submit` asset에서 `시간` 입력 marker 확인.
 
+## TSK-002-12 Evidence
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/27
+- Scope: Cloudflare Pages SPA direct route fallback.
+- Required live readback: `/events`, `/submit`, `/about` direct status 200 and `/api/runtime-status` status 200.
+
 ## TSK-002-10 Follow-up
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/24

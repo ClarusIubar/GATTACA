@@ -26,6 +26,16 @@
 - Scope map: `src/pages/SubmitPage.tsx`, `src/test/e2e-flow.test.tsx`, docs/wiki traceability.
 - Architecture risk: date/time split이 `eventAt` 형식을 깨뜨릴 수 있으므로 E2E에서 등록 후 목록/상세 흐름까지 검증한다.
 
+## TSK-002-12 증거
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/27
+- Branch: `tsk-002-12-pages-spa-direct-routes`
+- Responsibility map: `_redirects`는 Pages static SPA fallback을 담당하고, Worker는 `/api/*`를 계속 담당한다.
+- Dependency direction: Browser -> Pages static fallback -> React app; Browser -> Worker only for `/api/*`.
+- Test seam: production HTTP status readback에서 `/events`, `/submit`, `/about`, `/api/runtime-status`를 확인한다.
+- Scope map: `public/_redirects`, docs/wiki traceability.
+- Architecture risk: fallback이 `/api/*`를 잡으면 안 되므로 API status readback을 함께 확인한다.
+
 ## 검증 명령
 
 - `npm run lint`

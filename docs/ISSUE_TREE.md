@@ -20,3 +20,4 @@
 - [ ] TSK-002-09: https://github.com/ClarusIubar/GATTACA/issues/22
 - [ ] TSK-002-10: https://github.com/ClarusIubar/GATTACA/issues/24
 - [ ] TSK-002-11: https://github.com/ClarusIubar/GATTACA/issues/25
+- [ ] TSK-002-12: https://github.com/ClarusIubar/GATTACA/issues/27
