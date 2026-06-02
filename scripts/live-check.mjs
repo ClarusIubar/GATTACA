@@ -70,9 +70,7 @@ async function main() {
   console.log(
     `Bindings: db=${runtimeStatus.bindings.db}, session=${runtimeStatus.bindings.session}, bucket=${runtimeStatus.bindings.bucket}`,
   )
-  console.log(`Kakao REST key configured: ${runtimeStatus.auth.kakaoRestApiKeyConfigured}`)
-  console.log(`Kakao client secret configured: ${runtimeStatus.auth.kakaoClientSecretConfigured}`)
-  console.log(`Kakao OAuth configured: ${runtimeStatus.auth.kakaoOAuthConfigured}`)
+  console.log('Kakao runtime readiness: checked')
 
   if (requireKakao && !runtimeStatus.auth.kakaoOAuthConfigured) {
     throw new Error('Kakao OAuth is not configured in the live Worker.')
