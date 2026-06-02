@@ -38,3 +38,21 @@
 | TSK-002-10 | https://github.com/ClarusIubar/GATTACA/issues/24 | not opened yet | not applicable | `src/pages/EventsPage.tsx`, `src/index.css`, `docs/wiki/*` | `/events` 화면의 시각 밀도와 Figma 대비 격차를 줄이기 위해 | production 목록 화면이 정거장 보드/티켓 컨셉을 충분히 살리지 못했다 | 별도 child issue로 분리했다 | 아직 구현 전 | active |
 | TSK-002-11 | https://github.com/ClarusIubar/GATTACA/issues/25 | https://github.com/ClarusIubar/GATTACA/pull/26 | `b2c45b1180fd11c83500e09ad0de233c0204d2ce` | `src/pages/SubmitPage.tsx`, `src/test/e2e-flow.test.tsx`, `docs/wiki/*` | 일정 등록에서 시간 입력을 명확히 보장하기 위해 | `datetime-local` 단일 입력이 환경에 따라 달력 중심으로 보여 시간 입력이 불명확했다 | 날짜와 시간을 별도 input으로 분리하고 제출 시 기존 `eventAt` 문자열로 합성했다 | direct route 404는 TSK-002-12에서 해결 | completed |
 | TSK-002-12 | https://github.com/ClarusIubar/GATTACA/issues/27 | https://github.com/ClarusIubar/GATTACA/pull/29 | `77849ad7521489d48130455f0f48a1e35ef469c2` | `public/_redirects`, `public/404.html`, `docs/wiki/*` | 공유 링크와 새로고침에서 React route가 직접 열리게 하기 위해 | production `/events`, `/submit`, `/about` 직접 요청이 404를 반환했고, PR #28 후에도 custom `404.html` 때문에 404가 유지됐다 | `_redirects`를 SPA rewrite로 유지하고 Cloudflare Pages custom top-level `404.html`을 제거했다 | 없음. production readback 통과 | completed |
+
+## TSK-002-12 Ledger Evidence
+
+- Task ID: TSK-002-12
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/27
+- PR: https://github.com/ClarusIubar/GATTACA/pull/29
+- Merge commit: `77849ad7521489d48130455f0f48a1e35ef469c2`
+- 문서 경로: `public/_redirects`, removed `public/404.html`, `docs/16-sdd-traceability.md`, `docs/TASK_ID_LEDGER.md`, `docs/ISSUE_TREE.md`, `docs/wiki/*`
+- Document path: `public/_redirects`, removed `public/404.html`, `docs/16-sdd-traceability.md`, `docs/TASK_ID_LEDGER.md`, `docs/ISSUE_TREE.md`, `docs/wiki/*`
+- 왜 해결: 공유 링크와 새로고침에서 React route가 직접 열리게 하기 위해.
+- Why: direct React routes must open correctly from shared links and browser refresh.
+- 무슨 문제: production `/events`, `/submit`, `/about` 직접 요청이 404를 반환했고 PR #28 후에도 custom `404.html` 때문에 404가 유지됐다.
+- Problem: production nested routes returned 404 because the custom top-level `404.html` was still served.
+- 어떻게 해결: `_redirects`를 SPA rewrite로 유지하고 Cloudflare Pages custom top-level `404.html`을 제거했다.
+- How: kept `_redirects` as SPA rewrite and removed the Cloudflare Pages custom top-level `404.html`.
+- 남은 gap: 없음. production readback 통과.
+- Remaining gap: none; production readback passed.
+- Status: completed
