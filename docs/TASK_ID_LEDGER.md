@@ -2,7 +2,16 @@
 
 이 문서는 이슈, PR, 구현 범위, 검증 증거를 한 줄로 연결하는 추적성 원장이다.
 
-| Task ID | Issue | PR | Merge commit | 문서 경로 | 왜 해결 | 무슨 문제 | 어떻게 해결 | 남은 gap | Status |
+## Evidence Label Glossary
+
+- Issue: GitHub child issue.
+- 문서 경로 / Document path: 구현과 증거가 연결되는 파일 또는 문서 경로.
+- 왜 해결 / Why: 이 작업을 수행한 이유.
+- 무슨 문제 / Problem: 해결 전 실패 상태.
+- 어떻게 해결 / How: 적용한 해결 방식.
+- 남은 gap / Remaining gap: 완료 후 남은 범위 또는 없음.
+
+| Task ID | Issue | PR | Merge commit | Document path | Why | Problem | How | Remaining gap | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TSK-001-01 | https://github.com/ClarusIubar/GATTACA/issues/3 | https://github.com/ClarusIubar/GATTACA/pull/10 | not applicable | `docs/TASK_ID_LEDGER.md` | 초기 위키/테스트 구조를 정리하기 위해 | 저장소 구조와 검증 기준이 약했다 | DIP 구조와 Vitest 기반 테스트 골격을 추가했다 | TSK-002 계열에서 실사용 구조로 확장 | completed |
 | TSK-001-02 | https://github.com/ClarusIubar/GATTACA/issues/4 | not applicable | not applicable | `docs/sql/supabase-schema.sql` | 초기 데이터 모델과 보안 규칙을 남기기 위해 | Supabase 초안과 현재 Cloudflare 구조가 분리되어 있었다 | PostgreSQL schema/RLS 초안을 문서화했다 | 현재 요구는 Cloudflare D1/R2/KV로 이동 | completed |
