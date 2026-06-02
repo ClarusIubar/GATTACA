@@ -11,6 +11,12 @@
 - 어떻게 해결 / How: 적용한 해결 방식.
 - 남은 gap / Remaining gap: 완료 후 남은 범위 또는 없음.
 
+## 한국어 Evidence Labels
+
+| Issue | 문서 경로 | 왜 해결 | 무슨 문제 | 어떻게 해결 | 남은 gap |
+| --- | --- | --- | --- | --- | --- |
+| https://github.com/ClarusIubar/GATTACA/issues/27 | `public/_redirects`, removed `public/404.html`, `docs/wiki/*` | 공유 링크와 새로고침에서 React route가 직접 열리게 하기 위해 | production `/events`, `/submit`, `/about` 직접 요청이 404를 반환했고 PR #28 후에도 custom `404.html` 때문에 404가 유지됐다 | `_redirects`를 SPA rewrite로 유지하고 Cloudflare Pages custom top-level `404.html`을 제거했다 | 없음. production readback 통과 |
+
 | Task ID | Issue | PR | Merge commit | Document path | Why | Problem | How | Remaining gap | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TSK-001-01 | https://github.com/ClarusIubar/GATTACA/issues/3 | https://github.com/ClarusIubar/GATTACA/pull/10 | not applicable | `docs/TASK_ID_LEDGER.md` | 초기 위키/테스트 구조를 정리하기 위해 | 저장소 구조와 검증 기준이 약했다 | DIP 구조와 Vitest 기반 테스트 골격을 추가했다 | TSK-002 계열에서 실사용 구조로 확장 | completed |

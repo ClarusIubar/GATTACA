@@ -32,6 +32,7 @@
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/27
 - 검증 증거: `npm run build`, `npm run test`, `git diff --check`, `npm run test:smoke`, production direct route readback 통과.
+- validation evidence: `npm run build`, `npm run test`, `git diff --check`, `npm run test:smoke`, production direct route readback passed.
 - PR: https://github.com/ClarusIubar/GATTACA/pull/29
 - Merge commit: `77849ad7521489d48130455f0f48a1e35ef469c2`
 - Deploy run: `26824441879` success
