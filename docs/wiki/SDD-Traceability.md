@@ -24,6 +24,7 @@
 ## TSK-002-12 Evidence
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/27
+- Scope update: keep `_redirects` and remove the top-level custom `404.html` so Cloudflare Pages serves the React app shell on direct nested routes.
 - Scope: Cloudflare Pages SPA direct route fallback.
 - Required live readback: `/events`, `/submit`, `/about` direct status 200 and `/api/runtime-status` status 200.
 

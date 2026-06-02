@@ -7,6 +7,7 @@
 ### TSK-002-12 Cloudflare Pages SPA direct route 404 수정
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/27
+- Follow-up branch: `tsk-002-12-remove-pages-404-fallback`
 - Branch: `tsk-002-12-pages-spa-direct-routes`
 - 문제: production `/events`, `/submit`, `/about` 직접 요청이 404를 반환했다.
 - 변경: Cloudflare Pages `_redirects`를 표준 SPA rewrite 형식인 `/* /index.html 200`으로 정리한다.
