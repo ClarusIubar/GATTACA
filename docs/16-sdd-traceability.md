@@ -29,6 +29,9 @@
 ## TSK-002-12 증거
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/27
+- Follow-up branch: `tsk-002-12-remove-pages-404-fallback`
+- Post-PR #28 readback: `/events`, `/submit`, `/about` still returned 404 after `_redirects` normalization.
+- Follow-up fix: remove the top-level `public/404.html` custom fallback so Cloudflare Pages can serve the SPA app shell for direct React routes.
 - Branch: `tsk-002-12-pages-spa-direct-routes`
 - Responsibility map: `_redirects`는 Pages static SPA fallback을 담당하고, Worker는 `/api/*`를 계속 담당한다.
 - Dependency direction: Browser -> Pages static fallback -> React app; Browser -> Worker only for `/api/*`.

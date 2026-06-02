@@ -1,5 +1,12 @@
 # Task ID Ledger
 
+## TSK-002-12 Update
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/27
+- Follow-up branch: `tsk-002-12-remove-pages-404-fallback`
+- Update: keep `public/_redirects` as `/* /index.html 200` and remove the custom top-level `public/404.html`.
+- Reason: production direct routes still returned 404 after PR #28 because the custom Pages 404 fallback was still present.
+
 | Task ID | Issue | PR | Merge commit | Document path | Why | Problem | How | Remaining gap | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TSK-001-01 | https://github.com/ClarusIubar/GATTACA/issues/3 | https://github.com/ClarusIubar/GATTACA/pull/10 | not applicable | docs/TASK_ID_LEDGER.md | 초기 위키/테스트 구조를 정리하기 위해 | 저장소 구조와 검증 기준이 약했다 | DIP 구조와 Vitest 기반 테스트 골격을 추가했다 | 현재 구조는 TSK-002 계열로 확장됨 | completed |
