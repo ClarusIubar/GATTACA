@@ -135,9 +135,10 @@ describe('AppProvider Cloudflare session bootstrap', () => {
     expect(screen.getByTestId('nickname').textContent).toBe('비로그인')
   })
 
-  it('calls the worker relay instead of a mock-only Kakao path in cloudflare runtime', async () => {
+  it('creates events without automatically sending Kakao relay in cloudflare runtime', async () => {
     let contextValue: ReturnType<typeof useAppContext> | null = null
-    sendKakaoMessageMock.mockResolvedValue({ success: true, messageId: 'relay-msg-1' })
+    sendKakaoMessageMock.mockRejectedValue(new Error('relay must not be called from createEvent'))
+    const eventPostSpy = vi.fn()
 
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url =
@@ -199,6 +200,7 @@ describe('AppProvider Cloudflare session bootstrap', () => {
       }
 
       if (url === 'https://api.example.com/api/events' && method === 'POST') {
+        eventPostSpy()
         return new Response(
           JSON.stringify({
             ok: true,
@@ -251,12 +253,7 @@ describe('AppProvider Cloudflare session bootstrap', () => {
       })
     })
 
-    expect(sendKakaoMessageMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        text: expect.stringContaining('새 일정'),
-        buttonUrl: 'http://localhost:3000/events/event-123',
-      }),
-      { mode: 'worker-relay', apiUrl: 'https://api.example.com' },
-    )
+    expect(eventPostSpy).toHaveBeenCalledTimes(1)
+    expect(sendKakaoMessageMock).not.toHaveBeenCalled()
   })
 })

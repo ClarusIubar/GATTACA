@@ -15,6 +15,7 @@
 | 승인 사용자 CRU, 운영자 delete | docs/04, docs/06 | `src/lib/app-context.tsx`, Worker authorization | `npm run test:integration` | 진행 |
 | production demo fallback 차단 | docs/10, docs/11 | `src/lib/env.ts`, `src/App.setup.test.tsx` | `npm run test:regression` | 진행 |
 | Kakao OAuth/relay 경계 | docs/14, docs/15 | Worker auth routes, notification relay | `npm run test:unit`, `npm run test:integration` | 진행 |
+| 이벤트 저장과 Kakao 알림 분리 | docs/14, docs/wiki/PRD | `src/lib/app-context.tsx` | `npm run test:unit` | 진행 |
 | Cloudflare Pages SPA direct routes | docs/11, docs/13 | `public/_redirects`, removed `public/404.html` | `npm run build`, `npm run test`, `npm run test:smoke`, production readback | 완료 |
 | GitHub Wiki 반영 | docs/wiki | `docs/wiki/*.md`, wiki commit | Wiki sync commit 확인 | 진행 |
 
@@ -67,6 +68,16 @@
 - Architecture risk: hour/minute split이 `eventAt` 형식을 깨뜨릴 수 있으므로 E2E에서 등록 후 목록/상세 흐름까지 검증한다.
 - Validation: `npm run test:e2e`, `npm run test`, `npm run build`, `npm run lint`, `git diff --check`, `npm run test:smoke`.
 - Production readback: `/submit` returned 200 with React root; latest asset contained `eventHour` and `eventMinute`; native `type:"time"` marker was absent.
+
+## TSK-002-14 증거
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/38
+- Follow-up channel issue: https://github.com/ClarusIubar/GATTACA/issues/39
+- Responsibility map: repository/Worker는 이벤트 저장을 담당하고, Kakao relay는 별도 알림 채널/명시 전송 기능에서만 호출한다.
+- Dependency direction: SubmitPage -> AppContext -> repository for persistence; createEvent no longer depends on notification helper.
+- Test seam: Cloudflare AppContext test verifies event POST succeeds and `sendKakaoMessage` is not called.
+- Scope map: `src/lib/app-context.tsx`, `src/test/app-context-cloudflare.test.tsx`, docs/wiki traceability.
+- Architecture risk: 자동 relay 제거로 알림 기대가 사라질 수 있으므로 TSK-002-15에서 채널 등록/명시 전송을 별도 설계한다.
 
 ## 검증 명령
 

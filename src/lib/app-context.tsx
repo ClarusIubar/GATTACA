@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type PropsWithChildren } from 'react'
 import { appEnv, isCloudflareConfigured, isDemoModeEnabled } from './env'
-import { sendKakaoMessage } from './notification'
 import {
   CloudflareRepository,
   DemoRepository,
@@ -269,30 +268,8 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   async function createEvent(input: EventInput) {
     const writer = getWriter()
-    const createdEvent = await repository.createEvent(input, writer.id)
+    await repository.createEvent(input, writer.id)
     await refreshData()
-
-    const notificationPayload = {
-      text: `[추억열차] 새 일정 '${input.title}'이 등록되었습니다. 장소: ${input.location}`,
-      buttonTitle: '추억 보러가기',
-      buttonUrl: `${window.location.origin}/events/${createdEvent.id}`,
-    }
-
-    if (authMode === 'demo') {
-      void sendKakaoMessage(notificationPayload, { mode: 'mock' })
-      return
-    }
-
-    if (authMode === 'cloudflare') {
-      const result = await sendKakaoMessage(notificationPayload, {
-        mode: 'worker-relay',
-        apiUrl: appEnv.cloudflareApiUrl,
-      })
-
-      if (!result.success) {
-        throw new Error(`일정은 저장됐지만 카카오 알림 전송은 실패했습니다. ${result.error ?? ''}`.trim())
-      }
-    }
   }
 
   async function updateEvent(eventId: string, input: EventInput) {

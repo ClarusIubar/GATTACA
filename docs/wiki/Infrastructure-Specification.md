@@ -202,4 +202,5 @@ live 완료에 필요한 마지막 증거:
 1. Worker secrets 주입
 2. `/api/runtime-status`에서 `auth.kakaoOAuthConfigured=true`
 3. Kakao login redirect/callback/session restore
-4. 승인 사용자 event create -> memory upload -> comment -> Kakao relay 수신 확인
+4. 승인 사용자 event create -> memory upload -> comment 확인
+5. Kakao relay 수신 확인은 알림 채널 등록/명시 전송 기능 구현 후 별도 확인

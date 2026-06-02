@@ -11,13 +11,14 @@
 - relay 권한은 서버에서 강제합니다.
   - 승인 사용자
   - 운영자
-- Cloudflare runtime의 이벤트 생성 후 Worker relay를 호출합니다.
+- Cloudflare runtime의 이벤트 생성은 Worker relay를 자동 호출하지 않습니다.
+- Kakao 알림은 별도 알림 채널 등록과 명시 전송 기능이 마련된 뒤 해당 경로에서만 호출합니다.
 - demo mode는 여전히 mock 전용이며, live Kakao 전송처럼 보이게 하지 않습니다.
 
 ## 실패 동작
 
-- 이벤트 생성이 실패하면 relay 호출을 시도하지 않습니다.
-- 이벤트 저장은 성공했지만 Kakao 전송이 실패하면 UI는 "부분 성공"으로 보고합니다.
+- 이벤트 생성은 relay 호출을 시도하지 않습니다.
+- 이벤트 저장 성공 여부는 Kakao 전송 성공 여부에 의존하지 않습니다.
 - 세션에 Kakao access token이 없으면 Worker는 fail-closed로 relay 전송을 거부합니다.
 
 ## 검증

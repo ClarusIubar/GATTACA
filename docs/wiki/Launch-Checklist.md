@@ -52,7 +52,7 @@
 - [ ] 승인 사용자 event create 검증
 - [ ] memory upload 검증
 - [ ] comment create 검증
-- [ ] Kakao relay 수신 검증
+- [ ] Kakao 알림 채널 등록/명시 전송 기능 구현 후 relay 수신 검증
 
 ## 5. 완료 조건
 
@@ -60,4 +60,5 @@
 
 1. Cloudflare live infra가 정상 응답
 2. Kakao secrets 주입 후 OAuth/session이 실제로 동작
-3. 이벤트 생성부터 사진/코멘트, Kakao relay까지 end-to-end readback이 확인
+3. 이벤트 생성부터 사진/코멘트까지 end-to-end readback이 확인
+4. Kakao relay는 알림 채널 등록/명시 전송 기능 구현 후 별도 readback이 확인

@@ -159,7 +159,9 @@ Kakao 메시지 relay는 다음 조건을 만족해야 합니다.
 - 브라우저가 Kakao API를 직접 호출하지 않음
 - 승인 사용자 또는 운영자 세션만 relay 가능
 - 세션에 Kakao access token이 없으면 fail-closed
-- 이벤트 저장 성공 + relay 실패는 "부분 성공"으로 보고
+- 이벤트 저장은 Kakao relay 성공 여부에 의존하지 않음
+- 이벤트 생성 직후 relay를 자동 호출하지 않음
+- Kakao relay는 별도 알림 채널 등록과 명시 전송 기능에서만 호출
 
 현재 남은 외부 블로커:
 
@@ -204,4 +206,5 @@ npm run live:check -- --api-url https://gattaca-backend.yhh4433.workers.dev
 1. `KAKAO_REST_API_KEY` live 주입
 2. `KAKAO_CLIENT_SECRET` live 주입
 3. `/api/runtime-status`에서 `auth.kakaoOAuthConfigured=true`
-4. 실제 Kakao 로그인 -> session 복원 -> 이벤트 생성 -> 업로드 -> 코멘트 -> Kakao relay 수신 확인
+4. 실제 Kakao 로그인 -> session 복원 -> 이벤트 생성 -> 업로드 -> 코멘트 확인
+5. Kakao relay 수신 확인은 알림 채널 등록/명시 전송 기능 구현 후 별도 검증
