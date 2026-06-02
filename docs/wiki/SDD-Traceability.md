@@ -32,9 +32,10 @@
 ## TSK-002-13 Evidence
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/35
+- PR: https://github.com/ClarusIubar/GATTACA/pull/36
 - Scope: `/submit` 시간 입력에서 native `input[type="time"]`을 제거하고 `시`/`분` select로 교체한다.
 - Test seam: E2E가 `시간` input 부재와 `시`/`분` 선택을 검증한다.
-- Required live readback: production `/submit` asset에서 `eventHour`/`eventMinute` marker 확인.
+- Live readback: production `/submit` asset에서 `eventHour`/`eventMinute` marker 확인, native `type:"time"` marker 부재 확인.
 
 ## TSK-002-10 Follow-up
 
