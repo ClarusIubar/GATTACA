@@ -25,7 +25,9 @@ describe('Memory Train end-to-end user flow', () => {
 
     await user.type(screen.getByLabelText('이벤트 제목'), '테스트 E2E 모임 개설')
     await user.type(screen.getByLabelText('날짜'), '2026-06-15')
-    await user.type(screen.getByLabelText('시간'), '18:00')
+    expect(screen.queryByLabelText('시간')).not.toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText('시'), '18')
+    await user.selectOptions(screen.getByLabelText('분'), '00')
     await user.type(screen.getByLabelText('어디서'), '강남역')
     await user.type(screen.getByLabelText('무엇을 할지'), '가벼운 파티와 사진 전시')
     await user.type(screen.getByLabelText('어떻게 진행할지'), '회비 5만원, 각자 사진 한 장 준비')

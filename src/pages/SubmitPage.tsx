@@ -12,11 +12,15 @@ const defaultForm: EventInput = {
   decisionSummary: '',
 }
 
+const hours = Array.from({ length: 24 }, (_, index) => index.toString().padStart(2, '0'))
+const minutes = Array.from({ length: 60 }, (_, index) => index.toString().padStart(2, '0'))
+
 export function SubmitPage() {
   const { createEvent, currentUser, isAdmin, isApproved } = useAppContext()
   const [form, setForm] = useState<EventInput>(defaultForm)
   const [eventDate, setEventDate] = useState('')
-  const [eventTime, setEventTime] = useState('')
+  const [eventHour, setEventHour] = useState('')
+  const [eventMinute, setEventMinute] = useState('')
   const [feedback, setFeedback] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const navigate = useNavigate()
@@ -31,11 +35,12 @@ export function SubmitPage() {
     try {
       await createEvent({
         ...form,
-        eventAt: `${eventDate}T${eventTime}`,
+        eventAt: `${eventDate}T${eventHour}:${eventMinute}`,
       })
       setForm(defaultForm)
       setEventDate('')
-      setEventTime('')
+      setEventHour('')
+      setEventMinute('')
       setFeedback('정거장을 등록했습니다. 상세 페이지에서 사진과 코멘트를 이어갈 수 있습니다.')
       navigate('/events')
     } catch (error) {
@@ -83,14 +88,41 @@ export function SubmitPage() {
               </div>
 
               <div className="field">
-                <label htmlFor="eventTime">시간</label>
-                <input
-                  id="eventTime"
-                  type="time"
-                  value={eventTime}
-                  onChange={(eventObject) => setEventTime(eventObject.target.value)}
-                  required
-                />
+                <span className="field-label">시간</span>
+                <div className="time-select-grid" aria-label="시간 선택">
+                  <label className="time-select-field" htmlFor="eventHour">
+                    <span>시</span>
+                    <select
+                      id="eventHour"
+                      value={eventHour}
+                      onChange={(eventObject) => setEventHour(eventObject.target.value)}
+                      required
+                    >
+                      <option value="">선택</option>
+                      {hours.map((hour) => (
+                        <option key={hour} value={hour}>
+                          {hour}시
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="time-select-field" htmlFor="eventMinute">
+                    <span>분</span>
+                    <select
+                      id="eventMinute"
+                      value={eventMinute}
+                      onChange={(eventObject) => setEventMinute(eventObject.target.value)}
+                      required
+                    >
+                      <option value="">선택</option>
+                      {minutes.map((minute) => (
+                        <option key={minute} value={minute}>
+                          {minute}분
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               </div>
             </div>
 
