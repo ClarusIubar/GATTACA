@@ -56,13 +56,19 @@ jobs:
         run: |
           set -euo pipefail
           set +e
-          output="$(npx wrangler deploy --config wrangler.ci.toml --keep-vars=true --no-routes 2>&1)"
+          output="$(npx wrangler versions upload --config wrangler.ci.toml --keep-vars=true --message "GitHub Actions upload ${GITHUB_SHA}" 2>&1)"
           status=$?
           set -e
           printf '%s\n' "$output"
           if [ "$status" -ne 0 ]; then
             exit "$status"
           fi
+          version_id="$(printf '%s\n' "$output" | sed -n 's/^Worker Version ID: //p' | tail -n 1)"
+          if [ -z "$version_id" ]; then
+            echo "Could not detect Worker Version ID from wrangler versions upload output."
+            exit 1
+          fi
+          npx wrangler versions deploy "${version_id}@100" --config wrangler.ci.toml --yes --message "GitHub Actions deploy ${GITHUB_SHA}"
 
       - name: Build
         env:
