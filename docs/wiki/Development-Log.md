@@ -4,6 +4,14 @@
 
 ## 2026-06-02
 
+### TSK-002-14 이벤트 저장과 Kakao 알림 자동 전송 분리
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/38
+- Follow-up: https://github.com/ClarusIubar/GATTACA/issues/39
+- 문제: 알림 대상 채널 등록이 없는데도 이벤트 생성 직후 Kakao relay를 자동 호출해, DB 저장 성공 후 카카오 실패가 사용자 오류처럼 보였다.
+- 변경: `createEvent`에서 Kakao relay 자동 호출을 제거한다.
+- 정책: Kakao 알림은 별도 등록된 채널과 명시 전송 액션이 생긴 뒤에만 보낸다.
+
 ### TSK-002-13 일정 등록 시간 입력 선택 UI 교체
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/35

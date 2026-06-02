@@ -82,7 +82,8 @@ Kakao Developers에서 어떤 값을 가져와야 하는지는 [D:\Code305\GATTA
 1. Worker secrets 주입
 2. `/api/runtime-status`에서 `auth.kakaoOAuthConfigured=true`
 3. Kakao login redirect / callback / session restore 확인
-4. 승인 사용자 event create -> memory upload -> comment -> Kakao relay readback 확인
+4. 승인 사용자 event create -> memory upload -> comment readback 확인
+5. Kakao relay readback은 알림 채널 등록/명시 전송 기능 구현 후 별도 확인
 
 ## 롤백 기준
 

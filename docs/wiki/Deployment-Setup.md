@@ -160,7 +160,8 @@ npx wrangler secret put KAKAO_CLIENT_SECRET
 
 1. `GET /api/runtime-status`에서 `auth.kakaoOAuthConfigured=true` 확인
 2. Kakao login redirect -> callback -> session restore 확인
-3. approved-user event create -> memory upload -> comment -> Kakao relay readback 확인
+3. approved-user event create -> memory upload -> comment readback 확인
+4. Kakao relay readback은 알림 채널 등록/명시 전송 기능 구현 후 별도 확인
 
 ## 9. Completion Boundary
 
