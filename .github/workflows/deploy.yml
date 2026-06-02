@@ -56,7 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           set +e
-          output="$(npx wrangler deploy --keep-vars=true 2>&1)"
+          output="$(npx wrangler deploy --keep-vars=true --no-routes 2>&1)"
           status=$?
           set -e
           printf '%s\n' "$output"
