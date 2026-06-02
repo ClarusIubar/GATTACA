@@ -41,10 +41,13 @@
 - Responsibility map: `_redirects` and the absence of a top-level `404.html` own Cloudflare Pages SPA fallback; Worker owns `/api/*`; React owns client routing.
 - Dependency direction: Browser -> Pages static fallback -> React app; Browser -> Worker only for `/api/*`.
 - Boundary validation: direct React routes return the app shell and `/api/runtime-status` still returns Worker JSON.
+- boundary validation: direct React routes return the app shell and `/api/runtime-status` still returns Worker JSON.
 - Test seam: production HTTP status readback for `/events`, `/submit`, `/about`, `/api/runtime-status`.
 - Validation seam: production HTTP status and response body markers for Pages app shell versus Worker JSON.
+- validation seam: production HTTP status and response body markers for Pages app shell versus Worker JSON.
 - Scope map: `public/_redirects`, removed `public/404.html`, `docs/wiki/*`.
 - Architecture risk: a custom `404.html` can force nested React routes to remain 404 on Cloudflare Pages; live readback proves the API route still returns Worker JSON.
+- architecture risk: a custom `404.html` can force nested React routes to remain 404 on Cloudflare Pages; live readback proves the API route still returns Worker JSON.
 - Architecture risk validation: `/events`, `/submit`, `/about` returned 200 with React root present; `/api/runtime-status` returned 200 JSON with Worker runtime present.
 - Validation: `npm run build`, `npm run test`, `git diff --check`, `npm run test:smoke`.
 - Production readback: `/events`, `/submit`, `/about` returned 200 with React root present; `/api/runtime-status` returned 200 JSON with Worker runtime present.
