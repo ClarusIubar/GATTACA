@@ -29,7 +29,7 @@ export function SubmitPage() {
     try {
       await createEvent(form)
       setForm(defaultForm)
-      setFeedback('이벤트를 등록했습니다. 상세 페이지에서 추억 기록을 이어갈 수 있습니다.')
+      setFeedback('정거장을 등록했습니다. 상세 페이지에서 사진과 코멘트를 이어갈 수 있습니다.')
       navigate('/events')
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : '일정 등록에 실패했습니다.')
@@ -41,11 +41,14 @@ export function SubmitPage() {
   return (
     <section className="shell section">
       <div className="two-column">
-        <article className="panel">
+        <article className="panel submit-panel">
           <div className="section-heading">
-            <span className="section-heading__eyebrow">Schedule log</span>
-            <h2>확정된 일정 등록</h2>
-            <p>캘린더 대신 하나의 기록 카드로 남깁니다. 무엇을, 어디서, 어떻게 할지 분명하게 적어주세요.</p>
+            <span className="section-heading__eyebrow">New station</span>
+            <h2>확정된 일정을 정거장으로 등록</h2>
+            <p>
+              단체방에서 이미 결정된 내용을 기록합니다. 캘린더처럼 모든 후보를 담지 않고, 최종 합의만
+              남겨 나중에 바로 이해할 수 있게 합니다.
+            </p>
           </div>
 
           <form className="form-grid" onSubmit={handleSubmit}>
@@ -101,18 +104,18 @@ export function SubmitPage() {
                 id="how"
                 value={form.how}
                 onChange={(event) => setForm((current) => ({ ...current, how: event.target.value }))}
-                placeholder="준비물, 집합 방식, 역할 분담 등을 적어주세요."
+                placeholder="준비물, 집합 방식, 역할 분담, 비용 기준을 적어주세요."
                 required
               />
             </div>
 
             <div className="field">
-              <label htmlFor="decisionSummary">결정 요약</label>
+              <label htmlFor="decisionSummary">확정 요약</label>
               <textarea
                 id="decisionSummary"
                 value={form.decisionSummary}
                 onChange={(event) => setForm((current) => ({ ...current, decisionSummary: event.target.value }))}
-                placeholder="단체방에서 최종 확정된 내용을 한 문단으로 요약해주세요."
+                placeholder="단체방에서 최종 확정된 내용을 한 문단으로 요약합니다."
                 required
               />
             </div>
@@ -121,24 +124,26 @@ export function SubmitPage() {
 
             <div className="stack-actions">
               <button className="primary-button" disabled={!canWrite || isSaving} type="submit">
-                {isSaving ? '등록 중...' : '이벤트 등록'}
+                {isSaving ? '등록 중...' : '정거장 등록'}
               </button>
+              {!canWrite ? <span className="muted">승인된 사용자만 새 정거장을 등록할 수 있습니다.</span> : null}
             </div>
           </form>
         </article>
 
-        <aside className="panel">
+        <aside className="panel submit-guide">
           <div className="section-heading">
-            <span className="section-heading__eyebrow">작성 규칙</span>
-            <h2>이 페이지가 기록하는 것</h2>
+            <span className="section-heading__eyebrow">Checklist</span>
+            <h2>등록 전에 확인할 것</h2>
           </div>
           <ul className="rail-list">
-            <li>카카오톡 단체방에서 이미 결정된 일정</li>
-            <li>운영자가 나중에도 이해할 수 있는 요약 문장</li>
-            <li>행사 후 메모리와 코멘트가 이어질 수 있는 맥락</li>
+            <li>단체방 투표나 일정 조율이 끝난 최종안인지 확인합니다.</li>
+            <li>장소와 시간이 나중에 봐도 오해 없을 정도로 구체적인지 확인합니다.</li>
+            <li>무엇을 하고 어떻게 진행할지 분리해서 적습니다.</li>
+            <li>사진과 코멘트는 정거장 상세 페이지에서 이어서 남깁니다.</li>
           </ul>
           <p className="muted">
-            {canWrite ? '현재 계정은 일정 등록 권한을 가지고 있습니다.' : '승인된 사용자만 일정을 등록할 수 있습니다.'}
+            현재 계정 상태: {canWrite ? '일정 등록 가능' : currentUser ? '승인 대기' : '비로그인'}
           </p>
         </aside>
       </div>

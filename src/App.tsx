@@ -37,7 +37,7 @@ function Header() {
           <NavLink to="/events">기록 목록</NavLink>
           <NavLink to="/submit">일정 등록</NavLink>
           <NavLink to="/about">운영 원칙</NavLink>
-          {isAdmin ? <NavLink to="/admin">운영자</NavLink> : null}
+          {isAdmin ? <NavLink to="/admin">운영실</NavLink> : null}
         </nav>
 
         <div className="header-tools">
@@ -60,7 +60,7 @@ function Header() {
           ) : null}
 
           <div className="auth-chip">
-            <span>{currentUser?.kakaoNickname ?? '비로그인 방문객'}</span>
+            <span>{currentUser?.kakaoNickname ?? '비로그인 방문자'}</span>
             <small>{isAdmin ? '운영자' : isApproved ? '승인회원' : currentUser ? '승인대기' : '게스트'}</small>
           </div>
 
@@ -74,11 +74,7 @@ function Header() {
                 className="primary-button"
                 disabled={!kakaoReady}
                 onClick={() => void signInWithKakao()}
-                title={
-                  kakaoReady
-                    ? undefined
-                    : 'Worker에 Kakao OAuth 시크릿이 아직 설정되지 않았습니다.'
-                }
+                title={kakaoReady ? undefined : 'Worker에 Kakao OAuth 시크릿이 아직 설정되지 않았습니다.'}
               >
                 카카오 로그인
               </button>
@@ -108,8 +104,7 @@ function StatusBanner() {
         <div className="notice-card notice-card--error">
           <strong>배포 설정 필요</strong>
           <p>
-            이 배포본은 데모 데이터가 아닌 실제 연결 모드입니다. <code>VITE_CLOUDFLARE_API_URL</code>을 포함한
-            필수 설정을 먼저 연결해야 합니다.
+            실제 연결 모드로 실행하려면 <code>VITE_CLOUDFLARE_API_URL</code>을 설정해야 합니다.
           </p>
         </div>
       </div>
@@ -121,7 +116,7 @@ function StatusBanner() {
       <div className="shell">
         <div className="notice-card notice-card--demo">
           <strong>데모 모드</strong>
-          <p>로컬 또는 테스트용 데모 모드입니다. 헤더에서 권한 상태를 바꾸며 승인 흐름과 UI를 검증할 수 있습니다.</p>
+          <p>로컬 검증용 데모 모드입니다. 헤더에서 권한 상태를 바꿔 승인 흐름과 UI를 확인할 수 있습니다.</p>
         </div>
       </div>
     )
@@ -133,9 +128,8 @@ function StatusBanner() {
         <div className="notice-card notice-card--error">
           <strong>카카오 연결 대기 중</strong>
           <p>
-            Cloudflare Worker는 배포되어 있지만 <code>KAKAO_REST_API_KEY</code>와{' '}
-            <code>KAKAO_CLIENT_SECRET</code>이 아직 설정되지 않았습니다. 현재는 공개 읽기와 배포 상태 확인만
-            가능하며, 로그인은 시크릿 주입 후 열립니다.
+            Worker는 배포되었지만 <code>KAKAO_REST_API_KEY</code>와 <code>KAKAO_CLIENT_SECRET</code>이 아직
+            설정되지 않았습니다. 공개 읽기와 배포 상태 확인은 가능하지만 로그인은 열리지 않습니다.
           </p>
         </div>
       </div>
@@ -154,7 +148,7 @@ function StatusBanner() {
     return (
       <div className="shell">
         <div className="notice-card">
-          카카오 로그인과 승인 절차를 거치면 일정, 메모리, 코멘트를 작성할 수 있습니다.
+          카카오 로그인과 운영자 승인 절차를 거치면 일정, 메모리, 코멘트를 작성할 수 있습니다.
         </div>
       </div>
     )

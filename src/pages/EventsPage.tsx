@@ -8,44 +8,52 @@ export function EventsPage() {
 
   return (
     <section className="shell section">
-      <div className="section-heading">
-        <span className="section-heading__eyebrow">Timeline</span>
-        <h2>이벤트 기록 목록</h2>
-        <p>단체방에서 결정된 일정은 시간 순으로 쌓이고, 이후 사진과 코멘트가 이어집니다.</p>
+      <div className="section-heading section-heading--split">
+        <div>
+          <span className="section-heading__eyebrow">Station archive</span>
+          <h2>추억열차 정거장 목록</h2>
+          <p>확정된 일정만 시간 순서로 정리하고, 각 정거장에 사진과 코멘트를 이어 붙입니다.</p>
+        </div>
+        <Link className="primary-button" to="/submit">
+          새 정거장 등록
+        </Link>
       </div>
 
-      <div className="timeline">
-        {events.map((event) => {
-          const memoryCount = memories.filter((memory) => memory.eventId === event.id).length
+      <div className="station-timeline">
+        {events.map((event, index) => {
+          const eventMemories = memories.filter((memory) => memory.eventId === event.id)
           const commentCount = comments.filter((comment) =>
-            memories.some((memory) => memory.id === comment.memoryId && memory.eventId === event.id),
+            eventMemories.some((memory) => memory.id === comment.memoryId),
           ).length
 
           return (
-            <article className="timeline-card" key={event.id}>
-              <div className="timeline-card__meta">
-                <span className="pill">{formatDateTime(event.eventAt)}</span>
-                <span>{event.location}</span>
-                <span>등록자 {resolveProfileName(event.createdBy, profiles)}</span>
-              </div>
-              <h3>{event.title}</h3>
-              <p>{event.decisionSummary}</p>
-              <div className="inline-list">
-                <span>메모리 {memoryCount}건</span>
-                <span>코멘트 {commentCount}건</span>
-                <span>무엇을: {event.what}</span>
-              </div>
-              <div className="stack-actions">
-                <Link className="secondary-button" to={`/events/${event.id}`}>
-                  상세 기록 보기
-                </Link>
+            <article className="station-card" key={event.id}>
+              <div className="station-card__index">{String(index + 1).padStart(2, '0')}</div>
+              <div>
+                <div className="timeline-card__meta">
+                  <span className="pill">{formatDateTime(event.eventAt)}</span>
+                  <span>{event.location}</span>
+                  <span>등록자 {resolveProfileName(event.createdBy, profiles)}</span>
+                </div>
+                <h3>{event.title}</h3>
+                <p>{event.decisionSummary}</p>
+                <div className="inline-list">
+                  <span>메모리 {eventMemories.length}건</span>
+                  <span>코멘트 {commentCount}건</span>
+                  <span>무엇을: {event.what}</span>
+                </div>
+                <div className="stack-actions">
+                  <Link className="secondary-button" to={`/events/${event.id}`}>
+                    정거장 상세 보기
+                  </Link>
+                </div>
               </div>
             </article>
           )
         })}
 
         {events.length === 0 ? (
-          <div className="empty-card">아직 기록된 이벤트가 없습니다. 첫 일정을 등록해보세요.</div>
+          <div className="empty-card">아직 등록된 정거장이 없습니다. 첫 일정을 기록해 노선을 시작하세요.</div>
         ) : null}
       </div>
     </section>
