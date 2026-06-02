@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAppContext } from '../lib/app-context'
+import { validateImageFile } from '../lib/file-validation'
 import { formatDateTime } from '../lib/format'
 import { resolveProfileAvatar, resolveProfileName } from '../lib/profile-display'
 import type { CommentInput, EventInput, MemoryInput } from '../lib/types'
-import { validateImageFile } from '../lib/file-validation'
 
 const createMemoryForm = (eventId: string): MemoryInput => ({
   eventId,
@@ -12,7 +12,8 @@ const createMemoryForm = (eventId: string): MemoryInput => ({
   recordedAt: '',
 })
 
-const FALLBACK_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23f1f3f5'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23868e96'>추억 사진을 불러올 수 없습니다</text></svg>"
+const FALLBACK_IMAGE =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23f1f3f5'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23868e96'>추억 사진을 불러올 수 없습니다</text></svg>"
 
 export function EventDetailPage() {
   const { eventId } = useParams()
@@ -64,7 +65,7 @@ export function EventDetailPage() {
     return (
       <section className="shell section">
         <div className="empty-card">
-          이벤트를 찾을 수 없습니다. <Link to="/events">목록으로 돌아가기</Link>
+          이벤트를 찾을 수 없습니다. <Link to="/events">기록 목록으로 돌아가기</Link>
         </div>
       </section>
     )
@@ -84,7 +85,7 @@ export function EventDetailPage() {
       setMemoryForm(createMemoryForm(eventRecord.id))
       setMemoryFile(null)
       setMemoryUrl('')
-      setFeedback('추억 기록이 추가되었습니다.')
+      setFeedback('추억 기록을 추가했습니다.')
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : '메모리 등록에 실패했습니다.')
     }
@@ -99,7 +100,7 @@ export function EventDetailPage() {
     try {
       await updateEvent(eventRecord.id, eventForm)
       setEditingEvent(false)
-      setFeedback('이벤트가 수정되었습니다.')
+      setFeedback('이벤트를 수정했습니다.')
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : '이벤트 수정에 실패했습니다.')
     }
@@ -114,7 +115,7 @@ export function EventDetailPage() {
               <div className="event-meta">
                 <span className="pill">{formatDateTime(eventRecord.eventAt)}</span>
                 <span>{eventRecord.location}</span>
-                <span>등록자: {resolveProfileName(eventRecord.createdBy, profiles)}</span>
+                <span>등록자 {resolveProfileName(eventRecord.createdBy, profiles)}</span>
               </div>
               <h1>{eventRecord.title}</h1>
               <p>{eventRecord.decisionSummary}</p>
@@ -290,8 +291,8 @@ export function EventDetailPage() {
                       <img
                         alt={`${eventRecord.title} 메모리`}
                         src={memory.photoUrl || FALLBACK_IMAGE}
-                        onError={(e) => {
-                          e.currentTarget.src = FALLBACK_IMAGE
+                        onError={(eventObject) => {
+                          eventObject.currentTarget.src = FALLBACK_IMAGE
                         }}
                       />
                     </div>
@@ -336,7 +337,7 @@ export function EventDetailPage() {
                           )
                             .then(() => {
                               setEditingMemoryId(null)
-                              setFeedback('메모리가 수정되었습니다.')
+                              setFeedback('메모리를 수정했습니다.')
                             })
                             .catch((error) => {
                               setFeedback(
@@ -445,13 +446,11 @@ export function EventDetailPage() {
                                   void updateComment(comment.id, payload)
                                     .then(() => {
                                       setEditingCommentId(null)
-                                      setFeedback('코멘트가 수정되었습니다.')
+                                      setFeedback('코멘트를 수정했습니다.')
                                     })
                                     .catch((error) => {
                                       setFeedback(
-                                        error instanceof Error
-                                          ? error.message
-                                          : '코멘트 수정에 실패했습니다.',
+                                        error instanceof Error ? error.message : '코멘트 수정에 실패했습니다.',
                                       )
                                     })
                                 }}
@@ -522,7 +521,7 @@ export function EventDetailPage() {
                             void createComment({ memoryId: memory.id, content })
                               .then(() => {
                                 setCommentForm((current) => ({ ...current, [memory.id]: '' }))
-                                setFeedback('코멘트가 등록되었습니다.')
+                                setFeedback('코멘트를 등록했습니다.')
                               })
                               .catch((error) => {
                                 setFeedback(
@@ -556,7 +555,7 @@ export function EventDetailPage() {
               })}
 
               {eventMemories.length === 0 ? (
-                <div className="empty-card">아직 남겨진 메모리가 없습니다. 첫 장면을 기록해보세요.</div>
+                <div className="empty-card">아직 등록된 메모리가 없습니다. 첫 장면을 기록해보세요.</div>
               ) : null}
             </div>
           </article>
@@ -642,9 +641,9 @@ export function EventDetailPage() {
               <h2>이벤트 기록 원칙</h2>
             </div>
             <ul className="rail-list">
-              <li>단체방에서 이미 결정된 사안만 기록</li>
-              <li>사진은 행사 분위기를 전달할 수 있는 장면 위주로 등록</li>
-              <li>삭제는 운영자만 수행</li>
+              <li>단체방에서 결정된 사안만 기록합니다.</li>
+              <li>사진과 후기는 당일 분위기를 잘 전달하는 장면 위주로 남깁니다.</li>
+              <li>삭제는 운영자만 수행합니다.</li>
             </ul>
           </article>
         </aside>

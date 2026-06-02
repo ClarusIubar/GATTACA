@@ -1,44 +1,98 @@
 # 운영 정책 (Operations Policy)
 
-본 문서는 `추억열차 (GATTACA)` 서비스의 건전성, 보안 무결성 및 시스템 제어 권한을 보장하기 위한 공식 운영 지침입니다.
+이 문서는 `추억열차 (GATTACA)` 서비스의 운영 규칙과 권한 집행 기준을 설명합니다. 기준은 현재 저장소의 Cloudflare Worker 구현이며, 과거 Supabase 운영 가정은 더 이상 source-of-truth가 아닙니다.
 
 ---
 
-## 1. 🔐 사용자 가입 및 회원 등급 승인 정책
+## 1. 사용자 가입 및 승인 정책
 
-모임 멤버의 신뢰도를 보장하고 불특정 다수의 악의적인 쓰기 공격을 방어하기 위해 엄격한 승인 워크플로우를 고수합니다.
+모임 멤버 외의 임의 쓰기 접근을 막기 위해 승인 워크플로우를 유지합니다.
 
-1. **최초 가입 신청 (Kakao OAuth)**:
-   - 모든 신규 로그인 사용자는 시스템 데이터베이스(`public.members`)에 등급 값이 무조건 **`PENDING` (승인 대기)** 상태로 최초 등록됩니다.
-2. **단톡방 참여 여부 확인**:
-   - 모임 총무 또는 회장(ADMIN)은 신규 가입 신청자의 카카오 닉네임을 단톡방 참여자 명단과 대조하여 실시간 확인합니다.
-3. **등급 승인 권한 집행**:
-   - 확인이 완료되면, 운영자(`ADMIN`)는 관리자 패널(혹은 Supabase CLI/UI)을 통해 해당 사용자의 등급 필드를 **`APPROVED` (승인 회원)** 등급으로 변경합니다.
-   - 등급이 변경된 시점부터 해당 사용자는 일정을 추가하고 사진/댓글을 남길 수 있는 전면적인 쓰기 권한이 실시간 활성화됩니다.
+1. **최초 로그인**
+   - Kakao OAuth로 로그인한 사용자는 D1 `profiles`에 최초 등록됩니다.
+   - 초기 상태는 `pending`입니다.
 
----
+2. **단톡방 참여 여부 확인**
+   - 운영자는 카카오 닉네임과 단톡방 참여자 명단을 대조해 승인 여부를 판단합니다.
 
-## 2. 🚨 데이터 수정 및 삭제 정책
-
-기억의 정합성과 삭제 권한 오남용을 방지하기 위해 엄격한 삭제 제어를 적용합니다.
-
-1. **영구 삭제 통제권 (Admin Exclusivity)**:
-   - 등록된 일정(이벤트), 사진 메모리, 코멘트 피드의 영구 삭제 권한은 오직 **운영자 (`ADMIN`)** 등급에만 귀속됩니다.
-   - 일반 `APPROVED` 회원은 작성은 가능하나 임의 삭제가 원천 불가능하며, 삭제 요청 시 운영자에게 검토를 요청해야 합니다.
-2. **운영자 식별 메커니즘**:
-   - 프론트엔드 단: 로그인 세션 계정 ID와 빌드 시점에 기재된 `VITE_ADMIN_USER_ID` 환경 변수(또는 데이터베이스 내 `grade = 'ADMIN'`)의 물리적 일치 여부로 식별합니다.
-   - 데이터베이스 단: Supabase RLS 정책(`EXISTS (SELECT 1 FROM public.members WHERE id = auth.uid() AND grade = 'ADMIN')`)에 따라 REST API 조작 시도를 원천 방어합니다.
+3. **승인 집행**
+   - 운영자는 관리자 화면 또는 승인 API를 통해 `approval_status`를 `approved`로 변경합니다.
+   - 승인된 시점부터 이벤트, 메모리, 코멘트 작성/수정이 가능합니다.
 
 ---
 
-## 3. ✍️ 모임 기록 및 정합성 정책
+## 2. 데이터 수정 및 삭제 정책
 
-- **확정 결과 위주 박제**: 단톡방에서 충분한 논의를 거쳐 장소, 회비, 날짜가 최종 합의된 일정만 등록합니다. 조율 중인 사안은 추억열차에 등록하지 않습니다.
-- **방명록 피드 건전성**: 승인받은 사용자들끼리의 즐거운 회고 공간이므로, 비방이나 공격성 텍스트 기재 시 운영자가 발견 즉시 무통보 삭제 처리합니다.
+기억의 정합성과 삭제 권한 오남용을 막기 위해 삭제 권한은 운영자에게만 둡니다.
+
+1. **영구 삭제 통제권**
+   - 이벤트, 메모리, 코멘트의 영구 삭제는 운영자만 가능합니다.
+   - 승인 사용자는 작성 및 수정은 가능하지만 삭제는 불가합니다.
+
+2. **권한 판정 기준**
+   - 프론트는 세션과 상태에 따라 UI를 제어합니다.
+   - 최종 권한 판정은 Worker가 수행합니다.
+   - Worker는 request body의 `createdBy`, `authorId`, `userId`를 믿지 않습니다.
+   - 세션 사용자와 D1 owner lookup 기준으로 권한을 강제합니다.
 
 ---
 
-## 4. ⚙️ 환경변수 관리 및 배포 격리 정책
+## 3. 모임 기록 운영 기준
 
-- **무중단 데모 모드 (Fallback)**: 환경변수(`VITE_SUPABASE_URL`, `ANON_KEY`)가 없는 상태에서 빌드될 경우 시스템은 즉시 `데모 스토리지 모드`로 자동 전환되어 기본 열람 및 UI 흐름을 상시 가동합니다.
-- **민감 정보 격리**: 실제 운영을 위한 비밀 Key(`SUPABASE_SERVICE_ROLE_KEY`, `KAKAO_CLIENT_SECRET`)는 절대로 프론트엔드 코드나 깃허브 공개 설정에 포함하지 않으며, [Infrastructure-Specification](Infrastructure-Specification) 가이드에 따라 Cloudflare Workers의 보안 Secret 환경변수로만 격리하여 관리합니다.
+- **확정 결과만 등록**: 단톡방에서 장소, 날짜, 방식이 최종 합의된 일정만 등록합니다.
+- **조율 중 사안은 미등록**: 논의 중인 후보 일정은 추억열차에 올리지 않습니다.
+- **회고 중심 사용**: 이 서비스는 일정 조율 도구가 아니라 확정된 일정의 기록과 회고를 남기는 메모리얼 페이지입니다.
+- **부적절 콘텐츠 제거**: 승인 사용자 공간이라도 공격적 텍스트나 부적절한 사진은 운영자가 즉시 삭제할 수 있습니다.
+
+---
+
+## 4. 환경변수 및 secret 관리 정책
+
+### 프론트 build 변수
+
+- `VITE_CLOUDFLARE_API_URL`
+- `VITE_ADMIN_USER_ID` (선택)
+- `VITE_ENABLE_DEMO_MODE`
+
+규칙:
+
+- `VITE_ENABLE_DEMO_MODE=true`는 local/test seam에서만 사용합니다.
+- production build에서는 demo fallback을 기본 경로로 사용하지 않습니다.
+
+### Worker vars
+
+- `APP_BASE_URL`
+- `SESSION_TTL_SECONDS`
+- `ADMIN_AUTH_USER_ID` (선택)
+
+### Worker secrets
+
+- `KAKAO_REST_API_KEY`
+- `KAKAO_CLIENT_SECRET`
+
+민감 정보는 프론트 코드나 공개 GitHub 설정에 포함하지 않습니다. Kakao secret은 Cloudflare Workers secret으로만 관리합니다.
+
+---
+
+## 5. live 운영 경계
+
+현재 live 환경에서 확인된 사실:
+
+- Worker는 배포되어 있음
+- D1 / KV / R2 binding은 붙어 있음
+- production UI는 demo fallback으로 속이지 않음
+- Kakao secret이 없으면 로그인 버튼을 비활성화하고 경고를 노출함
+
+현재 남은 외부 블로커:
+
+- `KAKAO_REST_API_KEY`
+- `KAKAO_CLIENT_SECRET`
+
+이 두 값이 주입되면 실제 운영 검증은 아래 순서로 진행합니다.
+
+1. `auth.kakaoOAuthConfigured=true` readback
+2. Kakao login redirect/callback 확인
+3. session restore 확인
+4. 승인 사용자 event create
+5. memory upload / comment create
+6. Kakao relay 수신 확인

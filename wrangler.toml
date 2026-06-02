@@ -1,0 +1,25 @@
+name = "gattaca-backend"
+main = "worker/index.ts"
+compatibility_date = "2026-06-02"
+workers_dev = true
+routes = [
+  { pattern = "gattaca.jamissue.com/api/*", zone_name = "jamissue.com" }
+]
+
+[vars]
+APP_BASE_URL = "https://gattaca.jamissue.com"
+SESSION_TTL_SECONDS = "1209600"
+ADMIN_AUTH_USER_ID = ""
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gattaca-d1"
+database_id = "82e573b1-63f8-4847-8c43-1d0da38a2139"
+
+[[kv_namespaces]]
+binding = "SESSION"
+id = "06844e94cfaf4ecb8f692903b44199a7"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "memory-photos"

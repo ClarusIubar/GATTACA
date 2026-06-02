@@ -1,18 +1,7 @@
-/**
- * File: src/lib/repository.ts
- * Purpose: 추억열차 서비스의 데이터 스토리지 액세스 레이어를 추상화하고, 로컬 데모와 Supabase 백엔드 처리를 분할 구현합니다.
- * Primary Responsibility: 의존성 역전 원칙(DIP)을 실현하여 UI 및 상태 로직(Policy)과 물리 데이터베이스 통신(Mechanism)을 격리합니다.
- * Design Intent: 
- *   - MemoryTrainRepository 인터페이스를 통해 UI 계층이 로컬 데모와 원격 데이터베이스 모드를 알 필요 없이 통일된 비즈니스 요청을 보낼 수 있게 합니다.
- *   - SupabaseRepository는 데이터베이스의 snake_case와 프론트엔드의 camelCase 데이터 규격을 번역하는 번역 Seam 역할을 담당합니다.
- *   - DemoRepository는 LocalStorage 및 초기 모의 데이터를 활용해 라이브 연동 없이도 신속하게 작동하는 검증 심(Seam)을 제공합니다.
- * Non-Goals: 카카오 OAuth 로그인 인증 상태 및 실시간 사용자 세션 관리는 이 파일의 비범위이며, Supabase Auth 혹은 컨텍스트에서 수행합니다.
- * Dependencies: ./types, ./supabase, ./mock-data
- */
-
 import { initialDemoData } from './mock-data'
 import type {
   ApprovalStatus,
+  AppDataSnapshot,
   CommentInput,
   CommentRecord,
   EventInput,
@@ -20,108 +9,29 @@ import type {
   MemoryInput,
   MemoryRecord,
   UserProfile,
-  AppDataSnapshot,
 } from './types'
 
-/**
- * MemoryTrainRepository
- * @description 추억열차 데이터 액세스를 담당하는 최상위 공통 인터페이스입니다.
- */
 export interface MemoryTrainRepository {
-  /**
-   * 사용자 프로필 전체 목록을 가져옵니다.
-   */
   fetchProfiles(): Promise<UserProfile[]>
-  
-  /**
-   * 등록된 모든 이벤트 목록을 정렬해 가져옵니다.
-   */
   fetchEvents(): Promise<EventRecord[]>
-  
-  /**
-   * 등록된 모든 추억(사진/설명) 목록을 가져옵니다.
-   */
   fetchMemories(): Promise<MemoryRecord[]>
-  
-  /**
-   * 등록된 모든 댓글 목록을 가져옵니다.
-   */
   fetchComments(): Promise<CommentRecord[]>
-
-  /**
-   * 신규 이벤트를 개설합니다.
-   * @param input 이벤트 입력값
-   * @param creatorId 등록자 프로필 고유 ID
-   */
-  createEvent(input: EventInput, creatorId: string): Promise<void>
-  
-  /**
-   * 이벤트를 수정합니다.
-   * @param eventId 이벤트 ID
-   * @param input 수정 대상 입력값
-   */
+  createEvent(input: EventInput, creatorId: string): Promise<EventRecord>
   updateEvent(eventId: string, input: EventInput): Promise<void>
-  
-  /**
-   * 이벤트를 삭제합니다.
-   * @param eventId 이벤트 ID
-   */
   deleteEvent(eventId: string): Promise<void>
-
-  /**
-   * 신규 추억 사진을 등록합니다.
-   * @param input 추억 입력값
-   * @param photoUrl 완성된 사진 URL
-   * @param authorId 등록자 프로필 고유 ID
-   */
   createMemory(input: MemoryInput, photoUrl: string, authorId: string): Promise<void>
-  
-  /**
-   * 추억 사진과 설명을 수정합니다.
-   * @param memoryId 메모리 ID
-   * @param input 수정 대상 입력값
-   * @param photoUrl 새 사진 URL 혹은 기존 URL
-   */
   updateMemory(memoryId: string, input: MemoryInput, photoUrl: string): Promise<void>
-  
-  /**
-   * 추억 사진 데이터를 삭제합니다.
-   * @param memoryId 메모리 ID
-   */
   deleteMemory(memoryId: string): Promise<void>
-
-  /**
-   * 댓글을 작성합니다.
-   * @param input 댓글 입력값
-   * @param authorId 작성자 프로필 고유 ID
-   */
   createComment(input: CommentInput, authorId: string): Promise<void>
-  
-  /**
-   * 댓글을 수정합니다.
-   * @param commentId 댓글 ID
-   * @param input 수정 대상 입력값
-   */
   updateComment(commentId: string, input: CommentInput): Promise<void>
-  
-  /**
-   * 댓글을 삭제합니다.
-   * @param commentId 댓글 ID
-   */
   deleteComment(commentId: string): Promise<void>
-
-  /**
-   * 가입 신청한 프로필의 승인 상태를 업데이트합니다.
-   * @param profileId 프로필 ID
-   * @param status 승인/대기/반려 상태
-   */
   updateProfileApproval(profileId: string, status: ApprovalStatus): Promise<void>
 }
 
-/**
- * DemoRepository
- * @description LocalStorage와 Mock 데이터를 사용해 데이터를 조회 및 변경하는 테스트/시뮬레이션 전용 로컬 리포지토리입니다.
- */
+function createSetupError(): Error {
+  return new Error('Cloudflare API 설정이 없어 실사용 모드로 실행할 수 없습니다.')
+}
+
 export class DemoRepository implements MemoryTrainRepository {
   private readonly storageKey: string
 
@@ -168,7 +78,7 @@ export class DemoRepository implements MemoryTrainRepository {
     return [...data.comments].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   }
 
-  async createEvent(input: EventInput, creatorId: string): Promise<void> {
+  async createEvent(input: EventInput, creatorId: string): Promise<EventRecord> {
     const data = this.loadData()
     const newEvent: EventRecord = {
       id: this.makeId('event'),
@@ -177,24 +87,23 @@ export class DemoRepository implements MemoryTrainRepository {
     }
     data.events.unshift(newEvent)
     this.saveData(data)
+    return newEvent
   }
 
   async updateEvent(eventId: string, input: EventInput): Promise<void> {
     const data = this.loadData()
-    data.events = data.events.map((event) =>
-      event.id === eventId ? { ...event, ...input } : event
-    )
+    data.events = data.events.map((event) => (event.id === eventId ? { ...event, ...input } : event))
     this.saveData(data)
   }
 
   async deleteEvent(eventId: string): Promise<void> {
     const data = this.loadData()
-    const memoriesToDelete = data.memories.filter((m) => m.eventId === eventId).map((m) => m.id)
-    
-    data.events = data.events.filter((e) => e.id !== eventId)
-    data.memories = data.memories.filter((m) => m.eventId !== eventId)
-    data.comments = data.comments.filter((c) => !memoriesToDelete.includes(c.memoryId))
-    
+    const memoriesToDelete = data.memories.filter((memory) => memory.eventId === eventId).map((memory) => memory.id)
+
+    data.events = data.events.filter((event) => event.id !== eventId)
+    data.memories = data.memories.filter((memory) => memory.eventId !== eventId)
+    data.comments = data.comments.filter((comment) => !memoriesToDelete.includes(comment.memoryId))
+
     this.saveData(data)
   }
 
@@ -213,15 +122,15 @@ export class DemoRepository implements MemoryTrainRepository {
   async updateMemory(memoryId: string, input: MemoryInput, photoUrl: string): Promise<void> {
     const data = this.loadData()
     data.memories = data.memories.map((memory) =>
-      memory.id === memoryId ? { ...memory, ...input, photoUrl } : memory
+      memory.id === memoryId ? { ...memory, ...input, photoUrl } : memory,
     )
     this.saveData(data)
   }
 
   async deleteMemory(memoryId: string): Promise<void> {
     const data = this.loadData()
-    data.memories = data.memories.filter((m) => m.id !== memoryId)
-    data.comments = data.comments.filter((c) => c.memoryId !== memoryId)
+    data.memories = data.memories.filter((memory) => memory.id !== memoryId)
+    data.comments = data.comments.filter((comment) => comment.memoryId !== memoryId)
     this.saveData(data)
   }
 
@@ -240,32 +149,103 @@ export class DemoRepository implements MemoryTrainRepository {
   async updateComment(commentId: string, input: CommentInput): Promise<void> {
     const data = this.loadData()
     data.comments = data.comments.map((comment) =>
-      comment.id === commentId ? { ...comment, content: input.content } : comment
+      comment.id === commentId ? { ...comment, content: input.content } : comment,
     )
     this.saveData(data)
   }
 
   async deleteComment(commentId: string): Promise<void> {
     const data = this.loadData()
-    data.comments = data.comments.filter((c) => c.id !== commentId)
+    data.comments = data.comments.filter((comment) => comment.id !== commentId)
     this.saveData(data)
   }
 
   async updateProfileApproval(profileId: string, status: ApprovalStatus): Promise<void> {
     const data = this.loadData()
     data.profiles = data.profiles.map((profile) =>
-      profile.id === profileId ? { ...profile, approvalStatus: status } : profile
+      profile.id === profileId ? { ...profile, approvalStatus: status } : profile,
     )
     this.saveData(data)
   }
 }
 
+export class UnconfiguredRepository implements MemoryTrainRepository {
+  async fetchProfiles(): Promise<UserProfile[]> {
+    return []
+  }
 
+  async fetchEvents(): Promise<EventRecord[]> {
+    return []
+  }
 
-/**
- * CloudflareRepository
- * @description Cloudflare D1/R2/KV 기반 REST API 엔드포인트와 통신을 제어하는 에지 통합 리포지토리입니다.
- */
+  async fetchMemories(): Promise<MemoryRecord[]> {
+    return []
+  }
+
+  async fetchComments(): Promise<CommentRecord[]> {
+    return []
+  }
+
+  async createEvent(_input: EventInput, _creatorId: string): Promise<EventRecord> {
+    void _input
+    void _creatorId
+    throw createSetupError()
+  }
+
+  async updateEvent(_eventId: string, _input: EventInput): Promise<void> {
+    void _eventId
+    void _input
+    throw createSetupError()
+  }
+
+  async deleteEvent(_eventId: string): Promise<void> {
+    void _eventId
+    throw createSetupError()
+  }
+
+  async createMemory(_input: MemoryInput, _photoUrl: string, _authorId: string): Promise<void> {
+    void _input
+    void _photoUrl
+    void _authorId
+    throw createSetupError()
+  }
+
+  async updateMemory(_memoryId: string, _input: MemoryInput, _photoUrl: string): Promise<void> {
+    void _memoryId
+    void _input
+    void _photoUrl
+    throw createSetupError()
+  }
+
+  async deleteMemory(_memoryId: string): Promise<void> {
+    void _memoryId
+    throw createSetupError()
+  }
+
+  async createComment(_input: CommentInput, _authorId: string): Promise<void> {
+    void _input
+    void _authorId
+    throw createSetupError()
+  }
+
+  async updateComment(_commentId: string, _input: CommentInput): Promise<void> {
+    void _commentId
+    void _input
+    throw createSetupError()
+  }
+
+  async deleteComment(_commentId: string): Promise<void> {
+    void _commentId
+    throw createSetupError()
+  }
+
+  async updateProfileApproval(_profileId: string, _status: ApprovalStatus): Promise<void> {
+    void _profileId
+    void _status
+    throw createSetupError()
+  }
+}
+
 export class CloudflareRepository implements MemoryTrainRepository {
   private readonly apiUrl: string
 
@@ -275,6 +255,7 @@ export class CloudflareRepository implements MemoryTrainRepository {
 
   private async request<T>(path: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${this.apiUrl}${path}`, {
+      credentials: 'include',
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -284,7 +265,7 @@ export class CloudflareRepository implements MemoryTrainRepository {
 
     if (!response.ok) {
       const errText = await response.text()
-      throw new Error(`Cloudflare API 에러 (${response.status}): ${errText}`)
+      throw new Error(`Cloudflare API 오류 (${response.status}): ${errText}`)
     }
 
     return response.json() as Promise<T>
@@ -306,11 +287,13 @@ export class CloudflareRepository implements MemoryTrainRepository {
     return this.request<CommentRecord[]>('/api/comments')
   }
 
-  async createEvent(input: EventInput, creatorId: string): Promise<void> {
-    await this.request<void>('/api/events', {
+  async createEvent(input: EventInput, _creatorId: string): Promise<EventRecord> {
+    void _creatorId
+    const response = await this.request<{ ok: true; event: EventRecord }>('/api/events', {
       method: 'POST',
-      body: JSON.stringify({ ...input, createdBy: creatorId }),
+      body: JSON.stringify(input),
     })
+    return response.event
   }
 
   async updateEvent(eventId: string, input: EventInput): Promise<void> {
@@ -326,10 +309,11 @@ export class CloudflareRepository implements MemoryTrainRepository {
     })
   }
 
-  async createMemory(input: MemoryInput, photoUrl: string, authorId: string): Promise<void> {
+  async createMemory(input: MemoryInput, photoUrl: string, _authorId: string): Promise<void> {
+    void _authorId
     await this.request<void>('/api/memories', {
       method: 'POST',
-      body: JSON.stringify({ ...input, photoUrl, authorId }),
+      body: JSON.stringify({ ...input, photoUrl }),
     })
   }
 
@@ -346,10 +330,11 @@ export class CloudflareRepository implements MemoryTrainRepository {
     })
   }
 
-  async createComment(input: CommentInput, authorId: string): Promise<void> {
+  async createComment(input: CommentInput, _authorId: string): Promise<void> {
+    void _authorId
     await this.request<void>('/api/comments', {
       method: 'POST',
-      body: JSON.stringify({ ...input, authorId }),
+      body: JSON.stringify(input),
     })
   }
 

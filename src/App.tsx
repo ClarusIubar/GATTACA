@@ -14,10 +14,13 @@ function Header() {
     demoPersona,
     isAdmin,
     isApproved,
+    runtimeStatus,
     setDemoPersona,
     signInWithKakao,
     signOut,
   } = useAppContext()
+
+  const kakaoReady = runtimeStatus?.auth.kakaoOAuthConfigured !== false
 
   return (
     <header className="site-header">
@@ -42,6 +45,7 @@ function Header() {
             <label className="persona-switch">
               <span>데모 권한</span>
               <select
+                aria-label="데모 권한"
                 value={demoPersona}
                 onChange={(event) => {
                   setDemoPersona(event.target.value as typeof demoPersona)
@@ -56,10 +60,8 @@ function Header() {
           ) : null}
 
           <div className="auth-chip">
-            <span>{currentUser?.kakaoNickname ?? '비로그인 승객'}</span>
-            <small>
-              {isAdmin ? '운영자' : isApproved ? '승인회원' : currentUser ? '승인대기' : '게스트'}
-            </small>
+            <span>{currentUser?.kakaoNickname ?? '비로그인 방문객'}</span>
+            <small>{isAdmin ? '운영자' : isApproved ? '승인회원' : currentUser ? '승인대기' : '게스트'}</small>
           </div>
 
           {authMode === 'cloudflare' ? (
@@ -68,7 +70,16 @@ function Header() {
                 로그아웃
               </button>
             ) : (
-              <button className="primary-button" onClick={() => void signInWithKakao()}>
+              <button
+                className="primary-button"
+                disabled={!kakaoReady}
+                onClick={() => void signInWithKakao()}
+                title={
+                  kakaoReady
+                    ? undefined
+                    : 'Worker에 Kakao OAuth 시크릿이 아직 설정되지 않았습니다.'
+                }
+              >
                 카카오 로그인
               </button>
             )
@@ -80,7 +91,7 @@ function Header() {
 }
 
 function StatusBanner() {
-  const { authMode, isConfigured, isLoading, errorMessage, currentUser, isApproved, isAdmin } =
+  const { authMode, isLoading, errorMessage, runtimeStatus, currentUser, isApproved, isAdmin } =
     useAppContext()
 
   if (isLoading) {
@@ -91,14 +102,40 @@ function StatusBanner() {
     )
   }
 
-  if (!isConfigured) {
+  if (authMode === 'setup') {
+    return (
+      <div className="shell">
+        <div className="notice-card notice-card--error">
+          <strong>배포 설정 필요</strong>
+          <p>
+            이 배포본은 데모 데이터가 아닌 실제 연결 모드입니다. <code>VITE_CLOUDFLARE_API_URL</code>을 포함한
+            필수 설정을 먼저 연결해야 합니다.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (authMode === 'demo') {
     return (
       <div className="shell">
         <div className="notice-card notice-card--demo">
           <strong>데모 모드</strong>
+          <p>로컬 또는 테스트용 데모 모드입니다. 헤더에서 권한 상태를 바꾸며 승인 흐름과 UI를 검증할 수 있습니다.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (authMode === 'cloudflare' && runtimeStatus && !runtimeStatus.auth.kakaoOAuthConfigured) {
+    return (
+      <div className="shell">
+        <div className="notice-card notice-card--error">
+          <strong>카카오 연결 대기 중</strong>
           <p>
-            백엔드 API 설정이 없어 읽기 중심 데모 모드로 실행 중입니다. 헤더에서 권한 상태를
-            바꾸며 승인 흐름을 검증할 수 있습니다.
+            Cloudflare Worker는 배포되어 있지만 <code>KAKAO_REST_API_KEY</code>와{' '}
+            <code>KAKAO_CLIENT_SECRET</code>이 아직 설정되지 않았습니다. 현재는 공개 읽기와 배포 상태 확인만
+            가능하며, 로그인은 시크릿 주입 후 열립니다.
           </p>
         </div>
       </div>
@@ -113,17 +150,17 @@ function StatusBanner() {
     )
   }
 
-  if (authMode === 'cloudflare' && !currentUser) {
+  if (!currentUser) {
     return (
       <div className="shell">
         <div className="notice-card">
-          카카오 로그인 후 승인 절차를 거치면 일정, 메모리, 코멘트를 남길 수 있습니다.
+          카카오 로그인과 승인 절차를 거치면 일정, 메모리, 코멘트를 작성할 수 있습니다.
         </div>
       </div>
     )
   }
 
-  if (currentUser && !isApproved && !isAdmin) {
+  if (!isApproved && !isAdmin) {
     return (
       <div className="shell">
         <div className="notice-card">

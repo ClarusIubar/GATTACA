@@ -1,82 +1,173 @@
-# 배포 / 환경설정 (Deployment & Environment Configuration)
+# Deployment Setup
 
-본 문서는 `추억열차 (GATTACA)` 서비스의 로컬 개발 환경 구성, 클라우드 서버리스 인프라 배포 및 환경 변수 주입 방법을 단계별로 명시합니다.
+이 문서는 `추억열차 (GATTACA)`의 실제 배포 기준과 현재 live 상태를 정리합니다.
 
----
+## 1. Local Setup
 
-## 1. 💻 로컬 개발 환경 세팅 (Local Setup)
+```bash
+git clone https://github.com/ClarusIubar/GATTACA.git
+cd GATTACA
+npm install
+npm run dev
+```
 
-로컬 머신에서 프로젝트를 클론하고 개발 서버를 즉시 구동하는 방법입니다.
+로컬에서만 데모 모드를 켜고 싶다면 `.env.local`에 아래 값을 둡니다.
 
-1. **저장소 클론 및 패키지 설치**:
-   ```bash
-   git clone https://github.com/ClarusIubar/GATTACA.git
-   cd GATTACA
-   npm install
-   ```
-2. **로컬 개발 서버 실행**:
-   ```bash
-   npm run dev
-   ```
-   - 브라우저에서 `http://localhost:5173` 으로 접속합니다.
-   - 로컬에 `.env.local` 파일이 없더라도 앱은 **자동으로 데모 모드(Demo Mode)**로 전환되어 전체 구조와 라우팅을 100% 정상 열람할 수 있습니다.
-3. **로컬 테스트 스위트 실행**:
-   ```bash
-   # 전체 5단계 TDD 테스트 스위트 일회성 구동
-   npx vitest run
+```bash
+VITE_ENABLE_DEMO_MODE=true
+```
 
-   # 실시간 코드 변경 감지 테스트 (Watch Mode)
-   npm run test
-   ```
+## 2. Frontend Build Variables
 
----
+프론트엔드가 읽는 build env:
 
-## 2. 🌐 Cloudflare Pages를 통한 프론트엔드 배포
+- `VITE_CLOUDFLARE_API_URL`
+- `VITE_ADMIN_USER_ID` (선택)
+- `VITE_ENABLE_DEMO_MODE`
 
-최종 사용자에게 배포하는 고성능 정적 Pages 배포 사양입니다.
+규칙:
 
-1. Cloudflare 대시보드 ➡️ **[Workers & Pages]** ➡️ **[Pages]** ➡️ **[Connect to Git]** 클릭.
-2. `GATTACA` GitHub 저장소를 선택하고 아래 빌드 사양을 대입합니다:
-   - **Framework preset**: `Vite`
-   - **Build command**: `npm run build`
-   - **Build output directory**: `dist`
-3. **[Build Environment Variables]** 또는 **GitHub Variables (vars)**에 다음 환경 변수들을 바인딩합니다:
-   - `VITE_CLOUDFLARE_API_URL` : 백엔드 Worker 도메인 주소 (`https://gattaca-backend.your-subdomain.workers.dev`)
-   - `VITE_ADMIN_USER_ID` : 운영자 1인의 고유 ID 문자열
+- `VITE_ENABLE_DEMO_MODE=true`는 local/test seam에서만 사용
+- production build에서는 비우거나 `false`
+- SPA 라우팅을 위해 `public/_redirects` 포함
 
-> [!NOTE]
-> SPA 라우팅의 새로고침 404 오류 방지를 위해 `public/_redirects` 파일이 정상 배포본에 바인딩되어 있으며 자동으로 Cloudflare Edge 서버가 200 리디렉션을 제어합니다.
+## 3. Worker Resources
 
----
+Worker bindings:
 
-## 3. ⚡ Cloudflare Workers를 통한 백엔드 API Gateway 배포
+- `DB`: Cloudflare D1
+- `SESSION`: Cloudflare KV
+- `BUCKET`: Cloudflare R2
+- `APP_BASE_URL`
+- `SESSION_TTL_SECONDS`
+- `ADMIN_AUTH_USER_ID` (선택)
 
-카카오 API 비밀 키 은닉 및 D1/R2/KV 연동을 처리하는 에지 Workers 백엔드 서버리스 가이드입니다.
+Worker secrets:
 
-1. **Wrangler CLI 설정**:
-   - `wrangler.toml` 환경 구성 파일을 루트에 배치하고, Node.js 서버리스 배포 코드를 확인합니다.
-2. **API 배포 실행**:
-   ```bash
-   # wrangler CLI를 사용해 엣지 서버리스 배포 단일 집행
-   npx wrangler deploy
-   ```
-3. **보안 시크릿 키 주입 (Secrets)**:
-   카카오 로그인 및 비동기 알림톡 메시지 API 마스터 비밀번호 등급의 키들은 다음 wrangler 명령어로 Workers 보안 비밀 컨테이너에 주입하여 환경변수로 활용합니다:
-   ```bash
-   npx wrangler secret put KAKAO_REST_API_KEY
-   npx wrangler secret put KAKAO_CLIENT_SECRET
-   ```
+- `KAKAO_REST_API_KEY`
+- `KAKAO_CLIENT_SECRET`
 
----
+D1 schema:
 
-## 🔒 4. 보안 시크릿 키(Secret Keys) 초정밀 가이드링크
+- [docs/sql/cloudflare-d1-schema.sql](https://github.com/ClarusIubar/GATTACA/blob/main/docs/sql/cloudflare-d1-schema.sql)
 
-본 프로젝트는 보안 무결성 확보를 위해 배포 자격 토큰 및 데이터베이스/서드파티 비밀 키 관리를 엄격히 통제합니다.
+## 4. Validation Commands
 
-- Cloudflare API Token 발급 방법
-- GitHub Actions Secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) 바인딩 방법
-- GitHub Actions Variables (`CLOUDFLARE_API_URL`, `ADMIN_USER_ID`) 등록 방법
-- Cloudflare Workers Secrets (`KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`) 주입 방법
+```bash
+npm run lint
+npm run test
+npm run build
+npm run worker:deploy:dry-run
+npm run live:check -- --api-url https://gattaca-backend.yhh4433.workers.dev
+```
 
-위 핵심 보안 세팅의 모든 메뉴별 클릭 경로와 초정밀 가이드는 **[Infrastructure-Specification (인프라 사양 및 연동 가이드)](Infrastructure-Specification)** 위키 문서에 그림을 보듯 상세히 기재되어 있으므로 반드시 참고하여 설정을 마무리하십시오.
+Manual Pages deploy:
 
+```bash
+npm run pages:deploy
+```
+
+Require Kakao-ready runtime:
+
+```bash
+npm run live:check:kakao -- --api-url https://gattaca-backend.yhh4433.workers.dev
+```
+
+## 5. Public Runtime Endpoints
+
+현재 공개 검증 가능한 경로:
+
+- `GET /api/health`
+- `GET /api/runtime-status`
+- `GET /api/session`
+- `GET /api/auth/kakao`
+- `GET /api/auth/callback`
+- `POST /api/auth/logout`
+- `POST /api/upload`
+- `GET /uploads/<objectKey>`
+- `GET/POST /api/events`
+- `GET/POST /api/memories`
+- `GET/POST /api/comments`
+- `GET /api/profiles`
+- `PUT /api/profiles/:id/approval`
+- `POST /api/notifications/kakao-event`
+
+`/api/runtime-status`는 다음을 노출합니다.
+
+- `bindings.db`
+- `bindings.session`
+- `bindings.bucket`
+- `auth.kakaoRestApiKeyConfigured`
+- `auth.kakaoClientSecretConfigured`
+- `auth.kakaoOAuthConfigured`
+
+## 6. Build/Deploy Source of Truth
+
+현재 GitHub Actions 배포 흐름은 아래 순서입니다.
+
+1. Worker를 먼저 배포
+2. 배포 출력에서 `workers.dev` URL 추출
+3. 그 값을 `VITE_CLOUDFLARE_API_URL`로 build에 주입
+4. `npm run pages:deploy`로 build 결과를 Cloudflare Pages에 배포
+
+즉 production 배포 기준으로 필수 GitHub Secrets는 아래 두 개입니다.
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Worker secret을 GitHub Actions에서 같이 동기화하려면 아래 secret도 GitHub 저장소에 등록합니다.
+
+- `KAKAO_REST_API_KEY`
+- `KAKAO_CLIENT_SECRET`
+
+Kakao Developers에서 가져와야 하는 값은 `REST API 키`와 `Client secret 코드`입니다. 화면 위치와 secret 이름 매핑은 [Kakao-Credential-Setup](Kakao-Credential-Setup)을 기준으로 합니다.
+
+`CLOUDFLARE_API_URL` repo variable은 현재 GitHub Actions source-of-truth가 아닙니다.
+
+## 7. Live Readback Status (2026-06-02)
+
+Verified Pages deployment:
+
+- [https://61610380.gattaca-di0.pages.dev/](https://61610380.gattaca-di0.pages.dev/)
+
+Verified Worker health:
+
+- [https://gattaca-backend.yhh4433.workers.dev/api/health](https://gattaca-backend.yhh4433.workers.dev/api/health)
+
+Verified runtime status:
+
+- [https://gattaca-backend.yhh4433.workers.dev/api/runtime-status](https://gattaca-backend.yhh4433.workers.dev/api/runtime-status)
+
+Verified live state:
+
+- Worker deployed
+- D1 attached
+- KV attached
+- R2 attached
+- production UI does not fall back to demo
+- production UI disables Kakao login when Worker secrets are missing
+
+## 8. Remaining External Step
+
+실제 Kakao OAuth E2E를 열기 위해 아직 필요한 외부 작업:
+
+```bash
+npx wrangler secret put KAKAO_REST_API_KEY
+npx wrangler secret put KAKAO_CLIENT_SECRET
+```
+
+주입 후 검증 순서:
+
+1. `GET /api/runtime-status`에서 `auth.kakaoOAuthConfigured=true` 확인
+2. Kakao login redirect -> callback -> session restore 확인
+3. approved-user event create -> memory upload -> comment -> Kakao relay readback 확인
+
+## 9. Completion Boundary
+
+현재 상태는 "카카오 secret만 주입하면 live OAuth E2E를 바로 검증할 수 있는 수준"입니다.
+
+아직 완료로 닫지 않는 이유:
+
+- live Worker secrets 미주입
+- 실제 Kakao account를 통한 redirect/callback/session readback 미검증
+- 실제 Kakao memo relay 수신 미검증

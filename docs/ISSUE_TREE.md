@@ -8,3 +8,11 @@
 - [x] TSK-001-05: https://github.com/ClarusIubar/GATTACA/issues/7
 - [x] TSK-001-06: https://github.com/ClarusIubar/GATTACA/issues/8
 - [x] TSK-001-07: https://github.com/ClarusIubar/GATTACA/issues/9
+- [ ] TSK-002-00: https://github.com/ClarusIubar/GATTACA/issues/11
+- [ ] TSK-002-01: https://github.com/ClarusIubar/GATTACA/issues/12
+- [ ] TSK-002-02: https://github.com/ClarusIubar/GATTACA/issues/13
+- [ ] TSK-002-03: https://github.com/ClarusIubar/GATTACA/issues/14
+- [ ] TSK-002-04: https://github.com/ClarusIubar/GATTACA/issues/15
+- [ ] TSK-002-05: https://github.com/ClarusIubar/GATTACA/issues/16
+- [ ] TSK-002-06: https://github.com/ClarusIubar/GATTACA/issues/17
+- [ ] TSK-002-07: https://github.com/ClarusIubar/GATTACA/issues/18

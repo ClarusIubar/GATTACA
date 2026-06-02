@@ -1,80 +1,85 @@
 # 개발기록
 
-## 2026-05-31
-- **Wrangler 공식 CLI 배포 전환, 실제 프로젝트명(gattaca-di0) 무인 자동 생성, 불필요 인프라 소거 및 package.json Supabase 패키지 영구 삭제 (TSK-001-14-FIX-2)**:
-  - Node.js 22 LTS 환경에서 구 버전 `cloudflare/pages-action@v1` 액션의 치명적인 API/Undici 호환성 에러로 빌드가 깨진 원인을 정확히 규명 및 대응.
-  - 서드파티 깃허브 액션 대신 깃허브 러너에서 공식 **`npx wrangler pages deploy`**를 직접 호출하여 배포하는 파이프라인으로 리팩토링함으로써 서드파티 호환성 배포 에러를 원천 차단.
-  - 사용자가 Cloudflare 대시보드에 직접 프로젝트를 생성하지 않았더라도 배포 파이프라인에서 자동으로 생성 및 이식하도록 **`npx wrangler pages project create gattaca-di0 --production-branch=main`** 자동화 태스크를 연동하여, 미생성으로 인한 **8000007 (Project not found) API 에러**를 아키텍처적으로 완벽 해결.
-  - 프론트엔드 단독 배포 프로젝트 환경에 맞추어, 뇌피셜로 임시 생성했던 불필요한 인프라 바인딩 설정 파일인 `wrangler.toml` 을 최상위 루트에서 **물리적으로 완전히 삭제(delete) 영구 소거** 처리하여 프로젝트 무결성을 확보.
-  - 깃허브 Actions 빌드 러너 환경에서 Vite 번들링 시 기존 GitHub Pages용 레거시인 `base: '/GATTACA/'` 경로 분기가 강제 발동되어 실서버 Pages 도메인 진입 시 모든 정적 에셋(js, css)이 404로 폭사하여 **하얀 빈 화면(White Screen)**을 출력했던 치명적 리소스 로드 장애의 근본 원인을 식별 및 격파. `vite.config.ts` 의 base 설정을 항상 일관된 루트 경로인 **`base: '/'`** 로 물리 복구 정형화 완료.
-  - `package.json` 의 dependencies에 잔존해 있던 `@supabase/supabase-js` 패키지를 물리적으로 완벽 영구 삭제하여 Supabase 찌꺼기 라이브러리를 단 1바이트도 남기지 않고 완전 정비.
-- **GitHub Pages 레거시 배포 제거 및 Cloudflare Pages 단일 배포 통합 (TSK-001-14)**:
-  - 깃허브 페이지스 정적 배포 파이프라인 잔재인 `deploy` 잡(job), `Setup Pages`, `Upload artifact` 단계를 `.github/workflows/deploy.yml` 파일에서 완전히 도려내어 완벽히 영구 삭제.
-  - 배포 파이프라인의 명칭을 `Deploy to Cloudflare Pages` 로 최종 갱신하고, 오직 Cloudflare Pages 실서버로만 정적 에셋 빌드/배포를 단일 전담 수행하도록 워크플로우를 완벽하게 최적화 및 정밀 재수립 완료.
-- **Supabase 제거에 따른 컴파일 빌드 실패 오류 대응 및 복구 정비 (TSK-001-13-FIX)**:
-  - Supabase 완전 제거 리팩토링 후 `npm run build` 컴파일 중 4건의 타입스크립트 에러 발생 사실 확인 및 투명한 대응 수행.
-  - **TS6133 & TS2304 (app-context.tsx)**: Supabase 세션 메타데이터 번역기인 `getProfileFromMetadata` 미사용 선언 및 `Session` 타입 부재 오류 확인 후, 해당 함수를 완전 삭제하여 컴파일 오류 해결.
-  - **TS2339 (app-context.tsx)**: 카카오 알림톡 메시지 연동부(`sendKakaoMessage`)에 잔존해 있던 `appEnv.supabaseAnonKey` 미정의 변수 참조 버그를 `null` 주입 방식으로 전격 정정.
-  - **TS6133 (repository.test.ts)**: 테스트 케이스 내 미사용 `vi` 임포트 경고 에러 확인 후 삭제 정비.
-  - 에러 대응 정비 이후 `npm run build` 정적 컴파일 및 프로덕션 최종 빌드가 완벽히 성공하는 무결성을 복구 증명.
-- **GitHub Secrets 및 Variables 물리 이원화 정비 (TSK-001-13)**:
-  - GitHub Secrets는 오직 암호화된 비밀자격 증명(`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) 단 2개만을 등록 및 보관하도록 보안 경계를 엄격히 축소 정형화.
-  - 비민감 빌드 설정 정보(`CLOUDFLARE_API_URL`, `ADMIN_USER_ID`)는 GitHub Variables 영역에서 명확하게 분리 관리하도록 수립.
-  - `.github/workflows/deploy.yml` 파일 내 Vite 빌드 환경 변수 주입 시, 기존 `secrets` 바인딩을 `vars` 스코프 바인딩(`${{ vars.CLOUDFLARE_API_URL }}`, `${{ vars.ADMIN_USER_ID }}`)으로 정교하게 고도화 변경 완료.
-  - `docs/wiki/Infrastructure-Specification.md` 위키에 이와 같은 Secrets 및 Variables 물리적 격리 등록 및 바인딩 운용 매뉴얼을 완벽하게 반영 개정 완료.
-- **Cloudflare Workers 카카오 API 시크릿 락다운 가이드 추가 (TSK-001-12)**:
-  - 깃허브 시크릿에는 오직 클라우드플레어 정적 CDN 자산 빌드/배포를 위한 키만 탑재하고, 카카오 소셜 로그인 및 비동기 메시지 API에 필요한 민감한 키(`KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`)는 오직 Cloudflare Workers Secrets 환경에만 직접 암호화 격리하도록 설계 사상 정비.
-  - `docs/wiki/Infrastructure-Specification.md` 문서 내에 Wrangler CLI 및 Cloudflare Dashboard를 경유해 백엔드 에지 컨테이너에 암호화 락다운 방식으로 직접 Secrets를 설정 및 배포하는 상세 운용 가이드 신규 추가 보완.
-- **Supabase BaaS 의존성/레거시 찌꺼기 완전 퇴거 및 코드 청소 마감 (TSK-001-11)**:
-  - `SupabaseRepository` 클래스 및 supabase-js 클라이언트 의존성을 `repository.ts`에서 완벽하게 퇴거/삭제 완료.
-  - `src/lib/supabase.ts` 파일(Supabase 클라이언트 생성 로직) 물리적 삭제 조치.
-  - `app-context.tsx` 내에 남아있던 Supabase Auth 세션 구독 리스너(`onAuthStateChange`), 자동 가입 가드(`ensureProfile`), 스토리지 업로드 API 바인딩, `isSupabaseConfigured` 상태 및 분기를 100% 제거 및 `externalCurrentUser` 중심 구조로 초정밀 리팩토링.
-  - `App.tsx` 내의 Supabase 전용 로그인/로그아웃 노출 및 데모 경고 배너 텍스트를 Cloudflare 에지 런타임에 맞추어 완전히 정비.
-  - `docs/wiki/Architecture.md` 및 `docs/wiki/Infrastructure-Specification.md` 내의 다이어그램 및 시크릿 변수 가이드라인에서 Supabase 관련 항목을 완벽히 퇴거 완료.
-- **GitHub Secrets VITE 접두사 배제 연동 및 CI/CD 워크플로우 정비 (TSK-001-10)**:
-  - 깃허브 저장소 Secrets의 `VITE_` 프레임워크 종속성 접두사 배제 정책 수립.
-  - GitHub Actions 워크플로우 `deploy.yml`을 수정하여 깃허브 시크릿 표준명(`CLOUDFLARE_API_URL`, `ADMIN_USER_ID`)을 Vite 클라이언트 빌드 전용 VITE_ 환경변수로 자동 매핑 매칭 처리 완료.
-  - `docs/wiki/Infrastructure-Specification.md` 위키 문서에 인프라 Secrets 명명 규칙 개정 및 빌드/배포 환경변수 주입 경계 반영 완료.
-- **Cloudflare Pages CI/CD 통합 배포 파이프라인 수립 및 보안 경계 최신화 (TSK-001-09)**:
-  - GitHub Actions 워크플로우(`deploy.yml`)의 빌드 단계(`npm run build`)에 `VITE_CLOUDFLARE_API_URL` 빌드 타임 환경 변수 자동 주입 코드 연동 완료.
-  - 사용자가 GitHub Secrets에 Cloudflare 배포 토큰 및 계정 식별 키(`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`)와 API 엔드포인트 환경 변수를 통합 탑재함에 따라, 로컬 환경 수동 기재를 전면 배제한 원스톱 빌드 및 배포 무인화 구축.
-  - `docs/wiki/Infrastructure-Specification.md` 위키에 통합 배포 아키텍처적 경계를 반영 개정 완료: 단일 신뢰 원천(Single Source of Truth) 기반의 CI/CD 통합 보안 경계로 아키텍처적 명세 최신화.
-- **Cloudflare Native 데이터스토어 생태계(D1, R2, KV) 수평 마이그레이션 및 DIP 격리 실증 완료 (TSK-001-08)**:
-  - 외부 BaaS 의존성인 Supabase 대신 Cloudflare Pages Functions(Workers) 에지 백엔드 Native 스택으로 전격 이전.
-  - `MemoryTrainRepository` 인터페이스 규격을 100% 준수하는 `CloudflareRepository` 구체 클래스를 `repository.ts` 하위에 완벽히 구현하여 DIP(의존성 역전 원칙)의 결합 격리 설계 가치를 엄밀히 입증.
-  - `app-context.tsx` 컨텍스트 주입 로직 고도화: `isCloudflareConfigured` 런타임 라우팅 조건에 따라 에지 백엔드로의 자동 주입 스위칭 연동 완비.
-  - REST 기반의 스토리지 업로드(FormData Stream) 및 카카오 OAuth 소셜 로그인 에지 이관 완료.
-  - `docs/wiki/Architecture.md` 및 `docs/wiki/Infrastructure-Specification.md` 위키에 Cloudflare D1(SQLite DDL), R2(MIME/CORS), KV(글로벌 세션) 아키텍처 사상과 보안/배포 경계 명세를 공식 최신화 반영.
-  - 21개 Vitest 단위/통합/E2E 테스트 케이스 100% 통과 및 TypeScript 빌드 컴파일 무결성 검증 마감 성공.
-- **추억열차 아키텍처 고도화 및 5단계 TDD 체계 구축 성공 (TSK-001-01)**:
-  - `MemoryTrainRepository` 인터페이스 도입으로 UI 비즈니스 로직과 데이터 보존 레이어 간 결합도 완벽 격리.
-  - Vitest를 기반으로 고밀도 단위, 통합, 회귀, 스모크, E2E 시나리오 테스트(총 14개 케이스) 100% 통과 보장.
-  - 트레이서빌리티 5대 규격 문서(`GOVERNANCE_INDEX`, `TASK_ID_LEDGER`, `ISSUE_TREE` 등) 구축 및 R1 완료 보고 완료.
-- **Supabase BaaS 실서버 스키마 및 마이그레이션 SQL 설계 완료 (TSK-001-02)**:
-  - profiles, memories, comments, events 테이블 설계 및 PostgreSQL RLS 다단계 가드 정책 완벽 구현.
-  - `docs/sql/supabase-schema.sql` 명세서 및 뼈대 마감 성공.
-- **카카오 OAuth 소셜 로그인 및 사용자 권한 가드 연동 완료 (TSK-001-03)**:
-  - `signInWithKakao` OAuth 흐름 및 신규 가입 사용자를 `PENDING` 등급으로 자동 락다운하는 `ensureProfile` 런타임 보안 가드 수립.
-  - Vitest 통합 테스트 및 빌드 컴파일 100% 검증 완료 및 거버넌스 CLOSED 공식 마감 완료.
-- **Supabase Storage 기반 사진 메모리 업로드 유효성 가드 및 Fallback 연동 완료 (TSK-001-04)**:
-  - `file-validation.ts` 유틸리티 및 단위 테스트 세트 신규 도입.
-  - 사진 업로드 시 5MB 용량 제한 및 JPG/PNG/WEBP 포맷 유효성 검사 선제 가드 구현.
-  - 로딩 에러 시 화면 깨짐 방지를 위한 인라인 SVG 디폴트 플레이스홀더 이미지 Fallback 처리 완료.
-  - 17개 단위/통합/E2E 테스트 케이스 및 TypeScript 컴파일 빌드 패스 확인 완료 및 거버넌스 CLOSED 공식 마감 완료.
-- **운영자 전용 승인 및 영구 삭제 UI 구현 완료 (TSK-001-05)**:
-  - AdminPage 일반 유저 접근 시 리다이렉트 Navigate 라우터 가드 적용 완료.
-  - EventDetailPage 내 글/댓글 영구 삭제 시 실수 방지를 위한 window.confirm 2단계 보안 가드 도입 완료.
-  - 17개 회귀 테스트 통과 및 거버넌스 CLOSED 공식 마감 완료.
-- **모임 일정 확정 시 카카오 알림톡/메시지 비동기 자동 발송 구현 완료 (TSK-001-06)**:
-  - notification.ts 모듈 신규 설계 및 createEvent 완료 콜백 논블로킹 트리거 바인딩 성공.
-  - 21개 통합/단위 Vitest 테스트 통과 및 거버넌스 CLOSED 공식 마감 완료.
-- **GitHub Actions 및 Cloudflare Pages 무인 CI/CD 파이프라인 수립 완료 (TSK-001-07)**:
-  - deploy.yml 작성 완료. 빌드 전 19개 Vitest 테스트 통과 강제화 제약 완비.
-  - VITE_ 환경변수(GitHub Variables)와 Cloudflare API Token 배포 보안 격리 수립 완료 및 거버넌스 CLOSED 공식 마감 완료.
-- **Parent Core Issue `#2` (TSK-001-00) 대단원으로 CLOSED 공식 마감 완료**.
+이 문서는 현재 저장소의 구현 흐름을 "실사용 MVP 재구축" 기준으로 다시 정리한 기록입니다. 과거 실험성 Supabase 시도나 중간 프로토타입도 있었지만, 지금 중요하게 봐야 할 것은 `TSK-002` 계열에서 어떤 경계를 실구현했는지입니다.
 
-## 2026-05-01
-- 추억열차 v1 초기 구현 시작
-- GitHub Pages 정적 구조와 Supabase 권한 모델 채택
-- 데모 모드와 운영 모드를 함께 제공하는 프론트엔드 구성
-- Dodecagon 프레임워크 기준 문서 세트 작성
+## 2026-06-02
+
+### TSK-002-01 Worker foundation
+
+- `wrangler.toml` 추가
+- Worker 엔트리 및 라우터 추가
+- `/api/health`, `/api/session` foundation 추가
+- `public/_redirects` 추가
+- `worker:deploy:dry-run` 기준 배포 가능성 확인
+
+### TSK-002-02 D1 CRUD
+
+- D1 repository 추가
+- `profiles`, `events`, `memories`, `comments` CRUD route 연결
+- fake D1 기반 route/repository 테스트 추가
+- `docs/sql/cloudflare-d1-schema.sql` 정리
+
+### TSK-002-03 Kakao OAuth / KV Session
+
+- `GET /api/auth/kakao`
+- `GET /api/auth/callback`
+- `GET /api/session`
+- `POST /api/auth/logout`
+- Kakao code 교환 -> 사용자 조회 -> D1 profile upsert -> KV session 생성 흐름 구현
+- 프론트가 더 이상 "첫 번째 프로필/관리자 자동 선택"을 하지 않도록 정리
+
+### TSK-002-04 R2 Upload
+
+- `POST /api/upload`
+- `GET /uploads/<objectKey>`
+- JPEG / PNG / WEBP + 5MB 제한 검증
+- 메모리 사진을 실제 Worker/R2 경로로 저장
+
+### TSK-002-05 Server Authorization
+
+- 승인 사용자 / 운영자 권한 강제
+- 세션 사용자 + D1 owner lookup 기준으로 update/delete/approval 강제
+- request body의 `createdBy`, `authorId`, `userId`를 권한 근거로 사용하지 않도록 정리
+
+### TSK-002-06 Demo fallback 격리
+
+- runtime mode를 `cloudflare / demo / setup`으로 분리
+- production에서 demo fallback이 실사용처럼 보이지 않도록 차단
+- Kakao 미구성 상태를 setup blocker와 UI 경고로 명시
+
+### TSK-002-07 Kakao Relay
+
+- Kakao access token을 session record에 저장
+- `POST /api/notifications/kakao-event` 추가
+- 브라우저가 직접 Kakao API를 치지 않고 Worker relay를 사용하도록 변경
+- 이벤트 저장 성공 / Kakao 전송 실패 시 부분 성공으로 보고
+- live readback 기준 문서/위키/체크리스트 정리
+
+## 현재 live 기준 확인된 것
+
+- Pages preview: [https://61610380.gattaca-di0.pages.dev/](https://61610380.gattaca-di0.pages.dev/)
+- Worker health: [https://gattaca-backend.yhh4433.workers.dev/api/health](https://gattaca-backend.yhh4433.workers.dev/api/health)
+- Worker runtime status: [https://gattaca-backend.yhh4433.workers.dev/api/runtime-status](https://gattaca-backend.yhh4433.workers.dev/api/runtime-status)
+
+현재 확인된 runtime 상태:
+
+- `bindings.db=true`
+- `bindings.session=true`
+- `bindings.bucket=true`
+- `auth.kakaoRestApiKeyConfigured=false`
+- `auth.kakaoClientSecretConfigured=false`
+- `auth.kakaoOAuthConfigured=false`
+
+## 현재 남은 외부 블로커
+
+- `KAKAO_REST_API_KEY`
+- `KAKAO_CLIENT_SECRET`
+
+이 두 값이 live Worker에 주입되면 다음 검증으로 바로 넘어갈 수 있습니다.
+
+1. Kakao login redirect
+2. callback / session restore
+3. 승인 사용자 event create
+4. memory upload
+5. comment create
+6. Kakao relay 수신 확인

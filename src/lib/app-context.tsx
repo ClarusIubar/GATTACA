@@ -1,18 +1,12 @@
-/**
- * File: src/lib/app-context.tsx
- * Purpose: 애플리케이션의 최상위 전역 상태(사용자 권한, 이벤트, 메모리, 댓글) 및 데이터 흐름을 제공하는 React Context Provider입니다.
- * Primary Responsibility: UI 컴포넌트의 요청을 수신하여 활성 상태를 관리하고 비즈니스 규칙(작성자/운영자 권한 체크 등) 정책을 수행합니다.
- * Design Intent: 
- *   - 데이터 저장/조회 메커니즘을 MemoryTrainRepository 인터페이스 뒤로 캡슐화하여 데이터 액세스 방식 변화(Demo -> Supabase)가 비즈니스 로직에 무해하게 차단되도록 설계되었습니다.
- *   - 비즈니스 권한 검증 규칙(getWriter, getAdmin 등)을 일관되게 적용하여 보안 및 오작동 가능성을 원천 배제합니다.
- * Non-Goals: 데이터베이스 쿼리 및 SQL 데이터베이스 필드 번역은 수행하지 않으며, 이는 리포지토리 레이어에 위임합니다.
- * Dependencies: react, ./env, ./types, ./repository
- */
-
-import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react'
-import { appEnv, isCloudflareConfigured } from './env'
-import { DemoRepository, CloudflareRepository, type MemoryTrainRepository } from './repository'
+import { createContext, useCallback, useContext, useEffect, useState, type PropsWithChildren } from 'react'
+import { appEnv, isCloudflareConfigured, isDemoModeEnabled } from './env'
 import { sendKakaoMessage } from './notification'
+import {
+  CloudflareRepository,
+  DemoRepository,
+  UnconfiguredRepository,
+  type MemoryTrainRepository,
+} from './repository'
 import type {
   AuthMode,
   CommentInput,
@@ -22,6 +16,7 @@ import type {
   EventRecord,
   MemoryInput,
   MemoryRecord,
+  RuntimeStatus,
   UserProfile,
 } from './types'
 
@@ -32,6 +27,7 @@ interface AppContextValue {
   isConfigured: boolean
   isLoading: boolean
   errorMessage: string
+  runtimeStatus: RuntimeStatus | null
   currentUser: UserProfile | null
   demoPersona: DemoPersona
   events: EventRecord[]
@@ -71,31 +67,115 @@ function loadDemoPersona(): DemoPersona {
   return 'guest'
 }
 
+function sessionProfileToUserProfile(
+  session: {
+    profile: {
+      profileId: string
+      authUserId: string
+      role: UserProfile['role']
+      approvalStatus: UserProfile['approvalStatus']
+      kakaoNickname: string
+      avatarUrl: string
+    }
+  } | null,
+): UserProfile | null {
+  if (!session) {
+    return null
+  }
 
+  return {
+    id: session.profile.profileId,
+    authUserId: session.profile.authUserId,
+    role: session.profile.role,
+    approvalStatus: session.profile.approvalStatus,
+    kakaoNickname: session.profile.kakaoNickname,
+    avatarUrl: session.profile.avatarUrl,
+  }
+}
+
+async function fetchCloudflareSession(apiUrl: string): Promise<UserProfile | null> {
+  const response = await fetch(`${apiUrl}/api/session`, {
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    const errText = await response.text()
+    throw new Error(`세션 조회 실패 (${response.status}): ${errText}`)
+  }
+
+  const payload = (await response.json()) as {
+    authenticated: boolean
+    session: {
+      profile: {
+        profileId: string
+        authUserId: string
+        role: UserProfile['role']
+        approvalStatus: UserProfile['approvalStatus']
+        kakaoNickname: string
+        avatarUrl: string
+      }
+    } | null
+  }
+
+  if (!payload.authenticated || !payload.session) {
+    return null
+  }
+
+  return sessionProfileToUserProfile(payload.session)
+}
+
+async function fetchCloudflareRuntimeStatus(apiUrl: string): Promise<RuntimeStatus> {
+  const response = await fetch(`${apiUrl}/api/runtime-status`, {
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    const errText = await response.text()
+    throw new Error(`런타임 상태 조회 실패 (${response.status}): ${errText}`)
+  }
+
+  return (await response.json()) as RuntimeStatus
+}
+
+function resolveAuthMode(): AuthMode {
+  if (isCloudflareConfigured) {
+    return 'cloudflare'
+  }
+  if (isDemoModeEnabled) {
+    return 'demo'
+  }
+  return 'setup'
+}
+
+function createRepository(authMode: AuthMode): MemoryTrainRepository {
+  if (authMode === 'cloudflare') {
+    return new CloudflareRepository(appEnv.cloudflareApiUrl)
+  }
+  if (authMode === 'demo') {
+    return new DemoRepository()
+  }
+  return new UnconfiguredRepository()
+}
 
 export function AppProvider({ children }: PropsWithChildren) {
-  const [authMode] = useState<AuthMode>(
-    isCloudflareConfigured ? 'cloudflare' : 'demo',
-  )
+  const [authMode] = useState<AuthMode>(resolveAuthMode)
   const [demoPersona, setDemoPersonaState] = useState<DemoPersona>(() =>
-    isCloudflareConfigured ? 'guest' : loadDemoPersona(),
+    authMode === 'demo' ? loadDemoPersona() : 'guest',
   )
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [events, setEvents] = useState<EventRecord[]>([])
   const [memories, setMemories] = useState<MemoryRecord[]>([])
   const [comments, setComments] = useState<CommentRecord[]>([])
+  const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatus | null>(null)
   const [externalCurrentUser, setExternalCurrentUser] = useState<UserProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(isCloudflareConfigured)
+  const [isLoading, setIsLoading] = useState(authMode === 'cloudflare')
   const [errorMessage, setErrorMessage] = useState('')
-
-  // 1. DIP: 저장소 인터페이스 주입 바인딩
-  const [repository] = useState<MemoryTrainRepository>(() =>
-    isCloudflareConfigured
-      ? new CloudflareRepository(appEnv.cloudflareApiUrl)
-      : new DemoRepository(),
-  )
+  const [repository] = useState<MemoryTrainRepository>(() => createRepository(authMode))
 
   function setDemoPersona(persona: DemoPersona) {
+    if (authMode !== 'demo') {
+      return
+    }
     setDemoPersonaState(persona)
     localStorage.setItem(DEMO_PERSONA_KEY, persona)
   }
@@ -104,62 +184,14 @@ export function AppProvider({ children }: PropsWithChildren) {
     demoPersona === 'guest'
       ? null
       : profiles.find(
-          (profile) =>
-            profile.id === `profile-${demoPersona === 'approved' ? 'member' : demoPersona}`
+          (profile) => profile.id === `profile-${demoPersona === 'approved' ? 'member' : demoPersona}`,
         ) ?? null
 
   const resolvedCurrentUser = authMode === 'demo' ? demoCurrentUser : externalCurrentUser
   const isApproved = resolvedCurrentUser?.approvalStatus === 'approved'
   const isAdmin = resolvedCurrentUser?.role === 'admin'
 
-  useEffect(() => {
-    let disposed = false
-
-    async function bootstrap() {
-      setIsLoading(true)
-      setErrorMessage('')
-
-      try {
-        if (authMode === 'demo') {
-          await fetchRemoteData()
-          setIsLoading(false)
-          return
-        }
-
-        if (authMode === 'cloudflare') {
-          // Cloudflare 에지 생태계 세션 복원
-          const nextProfiles = await repository.fetchProfiles()
-          const mockUser = nextProfiles.find(p => p.role === 'admin') || nextProfiles[0] || null
-          setExternalCurrentUser(mockUser)
-          
-          await fetchRemoteData()
-          setIsLoading(false)
-          return
-        }
-      } catch (error) {
-        if (!disposed) {
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : '초기화 작업 중 문제가 발생했습니다.',
-          )
-        }
-      } finally {
-        if (!disposed) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    void bootstrap()
-
-    return () => {
-      disposed = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authMode])
-
-  async function fetchRemoteData() {
+  const fetchRemoteData = useCallback(async () => {
     try {
       const [nextProfiles, nextEvents, nextMemories, nextComments] = await Promise.all([
         repository.fetchProfiles(),
@@ -173,15 +205,49 @@ export function AppProvider({ children }: PropsWithChildren) {
       setMemories(nextMemories)
       setComments(nextComments)
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : '데이터를 불러오는 중 오류가 발생했습니다.',
-      )
+      setErrorMessage(error instanceof Error ? error.message : '데이터를 불러오는 중 오류가 발생했습니다.')
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [repository])
+
+  useEffect(() => {
+    let disposed = false
+
+    async function bootstrap() {
+      setIsLoading(true)
+      setErrorMessage('')
+
+      try {
+        if (authMode === 'cloudflare') {
+          const [sessionUser, nextRuntimeStatus] = await Promise.all([
+            fetchCloudflareSession(appEnv.cloudflareApiUrl),
+            fetchCloudflareRuntimeStatus(appEnv.cloudflareApiUrl),
+          ])
+          if (!disposed) {
+            setExternalCurrentUser(sessionUser)
+            setRuntimeStatus(nextRuntimeStatus)
+          }
+        }
+
+        await fetchRemoteData()
+      } catch (error) {
+        if (!disposed) {
+          setErrorMessage(error instanceof Error ? error.message : '초기화 중 문제가 발생했습니다.')
+        }
+      } finally {
+        if (!disposed) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void bootstrap()
+
+    return () => {
+      disposed = true
+    }
+  }, [authMode, fetchRemoteData])
 
   async function refreshData() {
     await fetchRemoteData()
@@ -203,25 +269,30 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   async function createEvent(input: EventInput) {
     const writer = getWriter()
-    await repository.createEvent(input, writer.id)
+    const createdEvent = await repository.createEvent(input, writer.id)
     await refreshData()
 
-    // 일정 확정 시 카카오 메시지 발송 비동기 트리거 연동 (논블로킹 백그라운드 실행)
-    void sendKakaoMessage(
-      {
-        text: `[추억열차] 새로운 모임 '${input.title}' 일정이 확정되어 타임라인에 등록되었습니다! 장소: ${input.location}`,
-        buttonTitle: '열차 타러가기',
-        buttonUrl: window.location.origin,
-      },
-      null, // Access Token 대용으로 설정값 주입
-      true // Mock Mode 활성화하여 유연한 integration 보장
-    ).then((res) => {
-      if (!res.success) {
-        console.warn('카카오 알림톡 자동 전송 실패:', res.error)
-      } else {
-        console.log('카카오 알림톡 자동 전송 완료:', res.messageId)
+    const notificationPayload = {
+      text: `[추억열차] 새 일정 '${input.title}'이 등록되었습니다. 장소: ${input.location}`,
+      buttonTitle: '추억 보러가기',
+      buttonUrl: `${window.location.origin}/events/${createdEvent.id}`,
+    }
+
+    if (authMode === 'demo') {
+      void sendKakaoMessage(notificationPayload, { mode: 'mock' })
+      return
+    }
+
+    if (authMode === 'cloudflare') {
+      const result = await sendKakaoMessage(notificationPayload, {
+        mode: 'worker-relay',
+        apiUrl: appEnv.cloudflareApiUrl,
+      })
+
+      if (!result.success) {
+        throw new Error(`일정은 저장됐지만 카카오 알림 전송은 실패했습니다. ${result.error ?? ''}`.trim())
       }
-    })
+    }
   }
 
   async function updateEvent(eventId: string, input: EventInput) {
@@ -258,12 +329,13 @@ export function AppProvider({ children }: PropsWithChildren) {
       if (!resolvedCurrentUser) {
         throw new Error('사진 업로드를 진행할 수 없습니다.')
       }
+
       const formData = new FormData()
       formData.append('file', photoFile)
-      formData.append('userId', resolvedCurrentUser.id)
 
       const response = await fetch(`${appEnv.cloudflareApiUrl}/api/upload`, {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       })
 
@@ -348,10 +420,12 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   async function signInWithKakao() {
     if (authMode === 'cloudflare') {
+      if (runtimeStatus && !runtimeStatus.auth.kakaoOAuthConfigured) {
+        throw new Error('Kakao OAuth 시크릿이 아직 Worker에 설정되지 않았습니다.')
+      }
       window.location.href = `${appEnv.cloudflareApiUrl}/api/auth/kakao?redirect_uri=${encodeURIComponent(
         window.location.origin,
       )}`
-      return
     }
   }
 
@@ -359,19 +433,22 @@ export function AppProvider({ children }: PropsWithChildren) {
     if (authMode === 'cloudflare') {
       setExternalCurrentUser(null)
       try {
-        await fetch(`${appEnv.cloudflareApiUrl}/api/auth/logout`, { method: 'POST' })
-      } catch (e) {
-        console.warn('Cloudflare 로그아웃 API 에러:', e)
+        await fetch(`${appEnv.cloudflareApiUrl}/api/auth/logout`, {
+          method: 'POST',
+          credentials: 'include',
+        })
+      } catch (error) {
+        console.warn('Cloudflare logout API error:', error)
       }
-      return
     }
   }
 
   const value: AppContextValue = {
     authMode,
-    isConfigured: isCloudflareConfigured,
+    isConfigured: authMode !== 'setup',
     isLoading,
     errorMessage,
+    runtimeStatus,
     currentUser: resolvedCurrentUser,
     demoPersona,
     events,
@@ -403,7 +480,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 export function useAppContext() {
   const context = useContext(AppContext)
   if (!context) {
-    throw new Error('AppProvider 안에서 useAppContext를 사용해야 합니다.')
+    throw new Error('AppProvider 내부에서 useAppContext를 사용해야 합니다.')
   }
   return context
 }
