@@ -9,7 +9,7 @@ describe('Memory Train end-to-end user flow', () => {
     window.history.replaceState({}, '', '/')
   })
 
-  it('creates a station, opens detail, adds a memory, and adds a comment', async () => {
+  it('creates a station with separate date and time inputs, opens detail, adds a memory, and adds a comment', async () => {
     render(<App />)
 
     const user = userEvent.setup()
@@ -24,7 +24,8 @@ describe('Memory Train end-to-end user flow', () => {
     expect(screen.getByRole('heading', { name: '확정된 일정을 새 정거장으로 등록' })).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('이벤트 제목'), '테스트 E2E 모임 개설')
-    await user.type(screen.getByLabelText('언제'), '2026-06-15T18:00')
+    await user.type(screen.getByLabelText('날짜'), '2026-06-15')
+    await user.type(screen.getByLabelText('시간'), '18:00')
     await user.type(screen.getByLabelText('어디서'), '강남역')
     await user.type(screen.getByLabelText('무엇을 할지'), '가벼운 파티와 사진 전시')
     await user.type(screen.getByLabelText('어떻게 진행할지'), '회비 5만원, 각자 사진 한 장 준비')

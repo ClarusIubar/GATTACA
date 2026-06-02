@@ -4,16 +4,28 @@
 
 ## 2026-06-02
 
+### TSK-002-11 일정 등록 날짜/시간 입력 분리
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/25
+- Branch: `tsk-002-11-submit-date-time-input`
+- 문제: `/submit`의 `datetime-local` 단일 입력이 일부 환경에서 달력 위주로 동작해 시간 입력이 명확하지 않았다.
+- 변경: `날짜`와 `시간`을 별도 입력으로 분리하고, 제출 시 기존 `EventInput.eventAt` contract인 `YYYY-MM-DDTHH:mm`으로 합성한다.
+- 테스트: E2E가 날짜와 시간을 각각 입력한 뒤 일정 등록, 상세 진입, 메모리/코멘트 작성 흐름을 검증하도록 갱신했다.
+
+### TSK-002-10 `/events` visual refinement 대기
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/24
+- 상태: production 배포 후 `/events` 화면 품질이 Figma 기대치보다 낮아 별도 후속 이슈로 분리했다.
+
 ### TSK-002-09 데스크톱/모바일 웹 UI 재구현
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/22
-- Branch: `tsk-002-09-responsive-figma-implementation`
+- PR: https://github.com/ClarusIubar/GATTACA/pull/23
+- Merge commit: `04100ed650ac55537db218956e367ad5471a1a7b`
 - Figma: https://www.figma.com/design/Y0KrDckzTd6Fjh4Jbi2ld6
 - 목적: PPT식 목업이 아니라 실제 서비스 가능한 웹페이지와 핸드폰 뷰를 구현한다.
 - 변경: App shell, Home, Events, Event Detail, Submit, About, Admin 문구와 레이아웃을 정상 한국어와 반응형 구조로 정리했다.
-- 변경: 데모 데이터와 테스트 문자열의 깨진 인코딩을 정리했다.
-- 변경: `src/index.css`를 데스크톱/모바일 기준으로 전면 정리했다.
-- 검증: `npm run lint`, `npm run test:unit`, `npm run test:integration`, `npm run test:regression`, `npm run test:e2e`, `npm run build`, `npm run test`.
+- 검증: `npm run lint`, `npm run test:unit`, `npm run test:integration`, `npm run test:regression`, `npm run test:e2e`, `npm run build`, `npm run test`, `npm run test:smoke`.
 
 ### 이전 구현 요약
 
@@ -31,11 +43,3 @@
 - Production: https://gattaca.jamissue.com/
 - Runtime status: https://gattaca.jamissue.com/api/runtime-status
 - Auth callback: https://gattaca.jamissue.com/api/auth/callback
-
-## 다음 검증 순서
-
-1. PR에서 lint/unit/integration/regression/e2e/build 통과.
-2. main merge.
-3. production deploy.
-4. live smoke readback.
-5. 실제 Kakao OAuth redirect/callback/session restore 확인.
