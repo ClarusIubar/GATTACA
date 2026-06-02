@@ -12,14 +12,14 @@ export function EventsPage() {
         <div>
           <span className="section-heading__eyebrow">Station archive</span>
           <h2>추억열차 정거장 목록</h2>
-          <p>확정된 일정만 시간 순서로 정리하고, 각 정거장에 사진과 코멘트를 이어 붙입니다.</p>
+          <p>확정된 약속을 시간 순서로 정리하고, 각 정거장에 사진과 코멘트를 이어 붙입니다.</p>
         </div>
         <Link className="primary-button" to="/submit">
           새 정거장 등록
         </Link>
       </div>
 
-      <div className="station-timeline">
+      <div className="station-timeline" aria-label="추억열차 정거장 타임라인">
         {events.map((event, index) => {
           const eventMemories = memories.filter((memory) => memory.eventId === event.id)
           const commentCount = comments.filter((comment) =>
@@ -29,7 +29,7 @@ export function EventsPage() {
           return (
             <article className="station-card" key={event.id}>
               <div className="station-card__index">{String(index + 1).padStart(2, '0')}</div>
-              <div>
+              <div className="station-card__body">
                 <div className="timeline-card__meta">
                   <span className="pill">{formatDateTime(event.eventAt)}</span>
                   <span>{event.location}</span>
@@ -53,7 +53,7 @@ export function EventsPage() {
         })}
 
         {events.length === 0 ? (
-          <div className="empty-card">아직 등록된 정거장이 없습니다. 첫 일정을 기록해 노선을 시작하세요.</div>
+          <div className="empty-card">아직 등록된 정거장이 없습니다. 첫 일정을 기록해 운행을 시작하세요.</div>
         ) : null}
       </div>
     </section>

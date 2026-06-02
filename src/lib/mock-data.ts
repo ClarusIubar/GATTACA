@@ -23,7 +23,7 @@ export const initialDemoData: AppDataSnapshot = {
     {
       id: 'profile-pending',
       authUserId: 'auth-pending',
-      kakaoNickname: '승인대기 승객',
+      kakaoNickname: '승인대기 동행',
       avatarUrl:
         'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=200&q=80',
       approvalStatus: 'pending',
@@ -33,19 +33,19 @@ export const initialDemoData: AppDataSnapshot = {
   events: [
     {
       id: 'event-spring-seoul',
-      title: '서울숲 봄 산책',
+      title: '서울 봄 산책',
       eventAt: '2026-05-18T14:00',
       location: '서울숲 3번 출구 앞',
-      what: '벚꽃이 지기 전 산책하고 사진 남기기',
-      how: '단톡 투표로 시간 확정 후 각자 도시락 하나씩 준비',
-      decisionSummary: '오후 2시 집합, 서울숲 산책 후 카페 기록 회고',
+      what: '벚꽃길을 함께 걷고 사진 남기기',
+      how: '단톡 투표로 시간 확정 후 각자 간식 하나씩 준비',
+      decisionSummary: '오후 2시 집합, 서울숲 산책 뒤 카페에서 기록 회고',
       createdBy: 'profile-admin',
     },
     {
       id: 'event-night-train',
       title: '밤기차 감성 모임',
       eventAt: '2026-06-02T19:30',
-      location: '서울역 인근 루프탑 카페',
+      location: '서울역 근처 루프탑 카페',
       what: '상반기 사진 정리와 음성메모 공유',
       how: '카카오톡 투표로 장소 선정, 비용은 각자 결제',
       decisionSummary: '카페 모임 후 인생네컷 촬영까지 진행',
@@ -59,7 +59,7 @@ export const initialDemoData: AppDataSnapshot = {
       authorId: 'profile-member',
       photoUrl:
         'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1200&q=80',
-      caption: '햇빛이 길게 내려오던 산책길. 서로 별 얘기 아닌데도 오래 웃었어요.',
+      caption: '햇빛이 길게 내려오던 산책길. 서로 본 지 오래되지 않은 것처럼 편했어요.',
       recordedAt: '2026-05-18T16:20',
     },
   ],
@@ -68,7 +68,7 @@ export const initialDemoData: AppDataSnapshot = {
       id: 'comment-spring-1',
       memoryId: 'memory-spring-1',
       authorId: 'profile-admin',
-      content: '이 날 사진 보니까 다음엔 노을 시간에 다시 가고 싶네요.',
+      content: '이 사진 보니까 다음에도 같은 시간에 다시 가고 싶네요.',
       createdAt: '2026-05-18T18:10',
     },
   ],

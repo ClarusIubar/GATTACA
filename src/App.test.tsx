@@ -15,8 +15,8 @@ test('renders demo mode banner when runtime falls back to demo', async () => {
 
 test('shows home hero content with train concept and operational status', async () => {
   render(<App />)
-  expect(await screen.findByText('단톡방의 약속을 오래 남는 정거장으로.')).toBeInTheDocument()
-  expect(screen.getByText('오늘의 운행 상태')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: '단톡방의 약속을 오래 남는 정거장으로.' })).toBeInTheDocument()
+  expect(screen.getByText('Today Status')).toBeInTheDocument()
   expect(screen.getByText('기록 노선도')).toBeInTheDocument()
 })
 

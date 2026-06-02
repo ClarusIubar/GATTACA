@@ -12,8 +12,8 @@
 - Kakao relay endpoint
 - production demo fallback 차단
 - Cloudflare Pages + Workers 배포
-- UI/UX 고도화: 홈, 목록, 상세, 등록, 소개 화면을 정거장/노선 콘셉트로 재구성
-- TDD 검증 계층: unit, integration, regression, smoke, e2e
+- 데스크톱/모바일 반응형 웹 UI
+- TDD 검증: unit, integration, regression, e2e, build
 - SDD 추적: 문서 요구사항과 구현/테스트 증거 매핑
 
 ## 기술 구성
@@ -51,24 +51,24 @@ npm run test:integration
 npm run test:regression
 npm run test:e2e
 npm run build
-npm run test:smoke
+npm run test
 ```
 
-전체 Vitest 묶음:
+production 배포 후에는 다음 smoke를 별도로 확인합니다.
 
 ```bash
-npm run test
+npm run test:smoke
 ```
 
 ## 배포 흐름
 
-GitHub Actions는 `main`에 머지된 코드를 production으로 배포합니다.
+GitHub Actions는 `main`에 merge된 코드를 production으로 배포합니다.
 
 1. 의존성 설치
 2. 테스트 실행
 3. Worker secret 동기화
-4. Worker version upload/deploy
-5. production API URL로 프론트엔드 build
+4. Worker deploy
+5. production API URL로 frontend build
 6. Cloudflare Pages project 확인
 7. `dist`를 Cloudflare Pages에 배포
 
@@ -79,7 +79,7 @@ GitHub Actions는 `main`에 머지된 코드를 production으로 배포합니다
 - `KAKAO_REST_API_KEY`
 - `KAKAO_CLIENT_SECRET`
 
-Kakao 값의 정확한 위치는 [docs/15-kakao-credential-setup.md](D:/Code305/GATTACA/docs/15-kakao-credential-setup.md)에 정리합니다.
+Kakao 값 위치와 redirect URI 설정은 [docs/15-kakao-credential-setup.md](D:/Code305/GATTACA/docs/15-kakao-credential-setup.md)와 [docs/wiki/Kakao-Credential-Setup.md](D:/Code305/GATTACA/docs/wiki/Kakao-Credential-Setup.md)에 정리합니다.
 
 ## 권한 모델
 
@@ -89,26 +89,6 @@ Kakao 값의 정확한 위치는 [docs/15-kakao-credential-setup.md](D:/Code305/
 - 운영자는 사용자 승인/반려와 삭제를 수행합니다.
 - 서버는 request body의 `createdBy`, `authorId`, `userId`를 권한 근거로 신뢰하지 않고 세션과 D1 owner lookup을 기준으로 강제합니다.
 
-## 공개 API 범위
-
-- `GET /api/health`
-- `GET /api/runtime-status`
-- `GET /api/session`
-- `GET /api/auth/kakao`
-- `GET /api/auth/callback`
-- `POST /api/auth/logout`
-- `POST /api/upload`
-- `GET /uploads/<objectKey>`
-- `GET /api/profiles`
-- `PUT /api/profiles/:id/approval`
-- `GET/POST /api/events`
-- `PUT/DELETE /api/events/:id`
-- `GET/POST /api/memories`
-- `PUT/DELETE /api/memories/:id`
-- `GET/POST /api/comments`
-- `PUT/DELETE /api/comments/:id`
-- `POST /api/notifications/kakao-event`
-
 ## 문서 링크
 
 - PRD/백로그: [docs/04-prd-backlog.md](D:/Code305/GATTACA/docs/04-prd-backlog.md)
@@ -117,4 +97,4 @@ Kakao 값의 정확한 위치는 [docs/15-kakao-credential-setup.md](D:/Code305/
 - 테스트/QA 전략: [docs/10-test-qa-strategy.md](D:/Code305/GATTACA/docs/10-test-qa-strategy.md)
 - 배포/운영: [docs/11-deployment-cicd-operations.md](D:/Code305/GATTACA/docs/11-deployment-cicd-operations.md)
 - SDD 추적성: [docs/16-sdd-traceability.md](D:/Code305/GATTACA/docs/16-sdd-traceability.md)
-- Wiki 원본: [docs/wiki/Home.md](D:/Code305/GATTACA/docs/wiki/Home.md)
+- GitHub Wiki 원본: [docs/wiki/Home.md](D:/Code305/GATTACA/docs/wiki/Home.md)

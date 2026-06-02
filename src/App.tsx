@@ -1,3 +1,11 @@
+/*
+ * File: src/App.tsx
+ * Purpose: Route the Memory Train application and expose global navigation/status UI.
+ * Primary Responsibility: Own the application shell while delegating data and page behavior to AppContext and route pages.
+ * Design Intent: Keep navigation, auth state display, and environment warnings consistent across desktop and mobile layouts.
+ * Non-Goals: This file does not own CRUD behavior, storage, authorization policy, or page-specific layout sections.
+ * Dependencies: React Router, AppProvider, route page components, and AppContext runtime/auth state.
+ */
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
 import { AppProvider, useAppContext } from './lib/app-context'
 import { AboutPage } from './pages/AboutPage'
@@ -34,7 +42,7 @@ function Header() {
         </NavLink>
 
         <nav className="site-nav" aria-label="주요 메뉴">
-          <NavLink to="/events">기록 목록</NavLink>
+          <NavLink to="/events">정거장 목록</NavLink>
           <NavLink to="/submit">일정 등록</NavLink>
           <NavLink to="/about">운영 원칙</NavLink>
           {isAdmin ? <NavLink to="/admin">운영실</NavLink> : null}
@@ -47,9 +55,7 @@ function Header() {
               <select
                 aria-label="데모 권한"
                 value={demoPersona}
-                onChange={(event) => {
-                  setDemoPersona(event.target.value as typeof demoPersona)
-                }}
+                onChange={(event) => setDemoPersona(event.target.value as typeof demoPersona)}
               >
                 <option value="guest">방문자</option>
                 <option value="pending">승인대기</option>
@@ -128,7 +134,7 @@ function StatusBanner() {
         <div className="notice-card notice-card--error">
           <strong>카카오 연결 대기 중</strong>
           <p>
-            Worker는 배포되었지만 <code>KAKAO_REST_API_KEY</code>와 <code>KAKAO_CLIENT_SECRET</code>이 아직
+            Worker는 배포됐지만 <code>KAKAO_REST_API_KEY</code>와 <code>KAKAO_CLIENT_SECRET</code>이 아직
             설정되지 않았습니다. 공개 읽기와 배포 상태 확인은 가능하지만 로그인은 열리지 않습니다.
           </p>
         </div>
