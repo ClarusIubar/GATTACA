@@ -10,6 +10,7 @@
 | 데스크톱/모바일 반응형 랜딩페이지 | docs/05 | `src/index.css`, `src/pages/*.tsx` | `npm run test:unit`, `npm run build`, Figma evidence | 진행 |
 | 정거장형 일정 기록 | docs/04, docs/05 | `src/pages/SubmitPage.tsx`, `src/pages/EventsPage.tsx` | `npm run test:e2e` | 진행 |
 | 날짜/시간 분리 입력 | docs/04, docs/05 | `src/pages/SubmitPage.tsx` | `npm run test:e2e` | 완료 |
+| native time input 제거와 시/분 선택 입력 | docs/04, docs/05 | `src/pages/SubmitPage.tsx` | `npm run test:e2e` | 진행 |
 | 상세에서 사진/메모리/코멘트 기록 | docs/04, docs/05 | `src/pages/EventDetailPage.tsx`, repository/worker CRUD | `npm run test:e2e`, `npm run test:integration` | 진행 |
 | 승인 사용자 CRU, 운영자 delete | docs/04, docs/06 | `src/lib/app-context.tsx`, Worker authorization | `npm run test:integration` | 진행 |
 | production demo fallback 차단 | docs/10, docs/11 | `src/lib/env.ts`, `src/App.setup.test.tsx` | `npm run test:regression` | 진행 |
@@ -51,6 +52,15 @@
 - Architecture risk validation: `/events`, `/submit`, `/about` returned 200 with React root present; `/api/runtime-status` returned 200 JSON with Worker runtime present.
 - Validation: `npm run build`, `npm run test`, `git diff --check`, `npm run test:smoke`.
 - Production readback: `/events`, `/submit`, `/about` returned 200 with React root present; `/api/runtime-status` returned 200 JSON with Worker runtime present.
+
+## TSK-002-13 증거
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/35
+- Responsibility map: SubmitPage는 날짜, 시, 분 입력과 `eventAt` 합성을 담당하고, AppContext/repository/Worker는 기존 payload contract를 유지한다.
+- Dependency direction: SubmitPage -> AppContext only. Worker, D1, R2, Kakao 경계는 변경하지 않는다.
+- Test seam: Testing Library E2E가 native `시간` control이 없음을 확인하고 `시`와 `분` select를 선택한다.
+- Scope map: `src/pages/SubmitPage.tsx`, `src/test/e2e-flow.test.tsx`, docs/wiki traceability.
+- Architecture risk: hour/minute split이 `eventAt` 형식을 깨뜨릴 수 있으므로 E2E에서 등록 후 목록/상세 흐름까지 검증한다.
 
 ## 검증 명령
 

@@ -4,6 +4,14 @@
 
 ## 2026-06-02
 
+### TSK-002-13 일정 등록 시간 입력 선택 UI 교체
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/35
+- Branch: `tsk-002-13-submit-time-select`
+- 문제: `/submit`의 native `input[type="time"]`이 일부 production 브라우저에서 컨트롤만 보이고 실제 시간 입력이 불명확했다.
+- 변경: native time input을 제거하고 `시`와 `분` select로 시간 입력을 고정한다.
+- 테스트: E2E가 `시간` input 부재, `시`/`분` 선택, 일정 등록 후 상세 진입 흐름을 검증한다.
+
 ### TSK-002-12 Cloudflare Pages SPA direct route 404 수정
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/27
