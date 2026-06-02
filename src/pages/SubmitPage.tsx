@@ -15,6 +15,8 @@ const defaultForm: EventInput = {
 export function SubmitPage() {
   const { createEvent, currentUser, isAdmin, isApproved } = useAppContext()
   const [form, setForm] = useState<EventInput>(defaultForm)
+  const [eventDate, setEventDate] = useState('')
+  const [eventTime, setEventTime] = useState('')
   const [feedback, setFeedback] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const navigate = useNavigate()
@@ -27,8 +29,13 @@ export function SubmitPage() {
     setIsSaving(true)
 
     try {
-      await createEvent(form)
+      await createEvent({
+        ...form,
+        eventAt: `${eventDate}T${eventTime}`,
+      })
       setForm(defaultForm)
+      setEventDate('')
+      setEventTime('')
       setFeedback('정거장을 등록했습니다. 상세 페이지에서 사진과 코멘트를 이어갈 수 있습니다.')
       navigate('/events')
     } catch (error) {
@@ -57,7 +64,7 @@ export function SubmitPage() {
               <input
                 id="title"
                 value={form.title}
-                onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+                onChange={(eventObject) => setForm((current) => ({ ...current, title: eventObject.target.value }))}
                 placeholder="예: 봄 산책, 기념 모임"
                 required
               />
@@ -65,26 +72,37 @@ export function SubmitPage() {
 
             <div className="form-grid form-grid--two">
               <div className="field">
-                <label htmlFor="eventAt">언제</label>
+                <label htmlFor="eventDate">날짜</label>
                 <input
-                  id="eventAt"
-                  type="datetime-local"
-                  value={form.eventAt}
-                  onChange={(event) => setForm((current) => ({ ...current, eventAt: event.target.value }))}
+                  id="eventDate"
+                  type="date"
+                  value={eventDate}
+                  onChange={(eventObject) => setEventDate(eventObject.target.value)}
                   required
                 />
               </div>
 
               <div className="field">
-                <label htmlFor="location">어디서</label>
+                <label htmlFor="eventTime">시간</label>
                 <input
-                  id="location"
-                  value={form.location}
-                  onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
-                  placeholder="예: 서울숲 3번 출구"
+                  id="eventTime"
+                  type="time"
+                  value={eventTime}
+                  onChange={(eventObject) => setEventTime(eventObject.target.value)}
                   required
                 />
               </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="location">어디서</label>
+              <input
+                id="location"
+                value={form.location}
+                onChange={(eventObject) => setForm((current) => ({ ...current, location: eventObject.target.value }))}
+                placeholder="예: 서울숲 3번 출구"
+                required
+              />
             </div>
 
             <div className="field">
@@ -92,7 +110,7 @@ export function SubmitPage() {
               <textarea
                 id="what"
                 value={form.what}
-                onChange={(event) => setForm((current) => ({ ...current, what: event.target.value }))}
+                onChange={(eventObject) => setForm((current) => ({ ...current, what: eventObject.target.value }))}
                 placeholder="이번 모임에서 함께 할 활동을 적어주세요."
                 required
               />
@@ -103,7 +121,7 @@ export function SubmitPage() {
               <textarea
                 id="how"
                 value={form.how}
-                onChange={(event) => setForm((current) => ({ ...current, how: event.target.value }))}
+                onChange={(eventObject) => setForm((current) => ({ ...current, how: eventObject.target.value }))}
                 placeholder="준비물, 집합 방식, 역할 분담, 비용 기준을 적어주세요."
                 required
               />
@@ -114,7 +132,9 @@ export function SubmitPage() {
               <textarea
                 id="decisionSummary"
                 value={form.decisionSummary}
-                onChange={(event) => setForm((current) => ({ ...current, decisionSummary: event.target.value }))}
+                onChange={(eventObject) =>
+                  setForm((current) => ({ ...current, decisionSummary: eventObject.target.value }))
+                }
                 placeholder="단체방에서 최종 확정된 내용을 한 문단으로 요약합니다."
                 required
               />
