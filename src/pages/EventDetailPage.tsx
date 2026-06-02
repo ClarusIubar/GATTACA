@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAppContext } from '../lib/app-context'
 import { validateImageFile } from '../lib/file-validation'
 import { formatDateTime } from '../lib/format'
 import { resolveProfileAvatar, resolveProfileName } from '../lib/profile-display'
 import type { CommentInput, EventInput, MemoryInput } from '../lib/types'
+
+const FALLBACK_IMAGE =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='640' height='420' viewBox='0 0 640 420'><rect width='640' height='420' fill='%23f6efe3'/><circle cx='500' cy='90' r='54' fill='%23d8542f' opacity='0.2'/><path d='M80 285h480' stroke='%23221c16' stroke-width='10' stroke-linecap='round'/><text x='50%25' y='48%25' dominant-baseline='middle' text-anchor='middle' font-family='serif' font-size='24' fill='%236a5445'>Memory Train</text></svg>"
 
 const createMemoryForm = (eventId: string): MemoryInput => ({
   eventId,
@@ -12,11 +15,9 @@ const createMemoryForm = (eventId: string): MemoryInput => ({
   recordedAt: '',
 })
 
-const FALLBACK_IMAGE =
-  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23f1f3f5'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23868e96'>추억 사진을 불러올 수 없습니다</text></svg>"
-
 export function EventDetailPage() {
   const { eventId } = useParams()
+  const navigate = useNavigate()
   const {
     comments,
     createComment,
@@ -35,61 +36,46 @@ export function EventDetailPage() {
     updateMemory,
   } = useAppContext()
 
-  const event = events.find((item) => item.id === eventId)
+  const eventRecord = events.find((item) => item.id === eventId)
+  const [feedback, setFeedback] = useState('')
+  const [editingEvent, setEditingEvent] = useState(false)
+  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null)
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [memoryForm, setMemoryForm] = useState<MemoryInput>(() => createMemoryForm(eventId ?? ''))
   const [memoryFile, setMemoryFile] = useState<File | null>(null)
   const [memoryUrl, setMemoryUrl] = useState('')
-  const [feedback, setFeedback] = useState('')
-  const [editingEvent, setEditingEvent] = useState(false)
+  const [memoryEdits, setMemoryEdits] = useState<Record<string, MemoryInput>>({})
+  const [memoryEditFiles, setMemoryEditFiles] = useState<Record<string, File | null>>({})
+  const [memoryEditUrls, setMemoryEditUrls] = useState<Record<string, string>>({})
+  const [commentForm, setCommentForm] = useState<Record<string, string>>({})
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
   const [eventForm, setEventForm] = useState<EventInput | null>(
-    event
+    eventRecord
       ? {
-          title: event.title,
-          eventAt: event.eventAt,
-          location: event.location,
-          what: event.what,
-          how: event.how,
-          decisionSummary: event.decisionSummary,
+          title: eventRecord.title,
+          eventAt: eventRecord.eventAt,
+          location: eventRecord.location,
+          what: eventRecord.what,
+          how: eventRecord.how,
+          decisionSummary: eventRecord.decisionSummary,
         }
       : null,
   )
-  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null)
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
-  const [memoryEdits, setMemoryEdits] = useState<Record<string, MemoryInput>>({})
-  const [memoryEditUrls, setMemoryEditUrls] = useState<Record<string, string>>({})
-  const [memoryEditFiles, setMemoryEditFiles] = useState<Record<string, File | null>>({})
-  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
-  const [commentForm, setCommentForm] = useState<Record<string, string>>({})
 
-  if (!event) {
+  if (!eventRecord) {
     return (
       <section className="shell section">
         <div className="empty-card">
-          이벤트를 찾을 수 없습니다. <Link to="/events">기록 목록으로 돌아가기</Link>
+          정거장을 찾을 수 없습니다. <Link to="/events">기록 목록으로 돌아가기</Link>
         </div>
       </section>
     )
   }
 
-  const eventRecord = event
-  const eventMemories = memories.filter((memory) => memory.eventId === eventRecord.id)
+  const selectedEvent = eventRecord
+  const eventMemories = memories.filter((memory) => memory.eventId === selectedEvent.id)
   const canWrite = Boolean(currentUser && (isApproved || isAdmin))
-  const canEditEvent = Boolean(currentUser && (isAdmin || currentUser.id === eventRecord.createdBy))
-
-  async function handleMemorySubmit(eventObject: React.FormEvent<HTMLFormElement>) {
-    eventObject.preventDefault()
-    setFeedback('')
-
-    try {
-      await createMemory(memoryForm, memoryFile, memoryUrl)
-      setMemoryForm(createMemoryForm(eventRecord.id))
-      setMemoryFile(null)
-      setMemoryUrl('')
-      setFeedback('추억 기록을 추가했습니다.')
-    } catch (error) {
-      setFeedback(error instanceof Error ? error.message : '메모리 등록에 실패했습니다.')
-    }
-  }
+  const canEditEvent = Boolean(currentUser && (isAdmin || currentUser.id === selectedEvent.createdBy))
 
   async function handleEventUpdate(eventObject: React.FormEvent<HTMLFormElement>) {
     eventObject.preventDefault()
@@ -98,11 +84,88 @@ export function EventDetailPage() {
     }
 
     try {
-      await updateEvent(eventRecord.id, eventForm)
+      await updateEvent(selectedEvent.id, eventForm)
       setEditingEvent(false)
-      setFeedback('이벤트를 수정했습니다.')
+      setFeedback('정거장 정보를 수정했습니다.')
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : '이벤트 수정에 실패했습니다.')
+      setFeedback(error instanceof Error ? error.message : '정거장 수정에 실패했습니다.')
+    }
+  }
+
+  async function handleMemorySubmit(eventObject: React.FormEvent<HTMLFormElement>) {
+    eventObject.preventDefault()
+    setFeedback('')
+
+    if (memoryFile) {
+      const validationError = validateImageFile(memoryFile)
+      if (validationError) {
+        setFeedback(validationError)
+        return
+      }
+    }
+
+    try {
+      await createMemory(memoryForm, memoryFile, memoryUrl)
+      setMemoryForm(createMemoryForm(selectedEvent.id))
+      setMemoryFile(null)
+      setMemoryUrl('')
+      setFeedback('메모리를 남겼습니다.')
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : '메모리 등록에 실패했습니다.')
+    }
+  }
+
+  async function handleMemoryUpdate(memoryId: string) {
+    const draft = memoryEdits[memoryId]
+    if (!draft) {
+      return
+    }
+
+    const file = memoryEditFiles[memoryId] ?? null
+    if (file) {
+      const validationError = validateImageFile(file)
+      if (validationError) {
+        setFeedback(validationError)
+        return
+      }
+    }
+
+    try {
+      await updateMemory(memoryId, draft, file, memoryEditUrls[memoryId] ?? '')
+      setEditingMemoryId(null)
+      setFeedback('메모리를 수정했습니다.')
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : '메모리 수정에 실패했습니다.')
+    }
+  }
+
+  async function handleCommentSubmit(memoryId: string) {
+    const content = commentForm[memoryId]?.trim()
+    if (!content) {
+      return
+    }
+
+    const input: CommentInput = { memoryId, content }
+    try {
+      await createComment(input)
+      setCommentForm((current) => ({ ...current, [memoryId]: '' }))
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : '코멘트 등록에 실패했습니다.')
+    }
+  }
+
+  async function handleCommentUpdate(commentId: string) {
+    const content = commentDrafts[commentId]?.trim()
+    if (!content) {
+      return
+    }
+
+    try {
+      await updateComment(commentId, { memoryId: '', content })
+      setEditingCommentId(null)
+      setFeedback('코멘트를 수정했습니다.')
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : '코멘트 수정에 실패했습니다.')
     }
   }
 
@@ -110,25 +173,25 @@ export function EventDetailPage() {
     <section className="shell section">
       <div className="two-column">
         <div className="grid">
-          <article className="panel">
+          <article className="panel event-hero-card">
             <div className="event-header">
               <div className="event-meta">
-                <span className="pill">{formatDateTime(eventRecord.eventAt)}</span>
-                <span>{eventRecord.location}</span>
-                <span>등록자 {resolveProfileName(eventRecord.createdBy, profiles)}</span>
+                <span className="pill">{formatDateTime(selectedEvent.eventAt)}</span>
+                <span>{selectedEvent.location}</span>
+                <span>등록자 {resolveProfileName(selectedEvent.createdBy, profiles)}</span>
               </div>
-              <h1>{eventRecord.title}</h1>
-              <p>{eventRecord.decisionSummary}</p>
+              <h1>{selectedEvent.title}</h1>
+              <p>{selectedEvent.decisionSummary}</p>
             </div>
 
             <div className="panel-grid">
-              <div className="panel">
+              <div className="panel panel--nested">
                 <strong>무엇을</strong>
-                <p>{eventRecord.what}</p>
+                <p>{selectedEvent.what}</p>
               </div>
-              <div className="panel">
+              <div className="panel panel--nested">
                 <strong>어떻게</strong>
-                <p>{eventRecord.how}</p>
+                <p>{selectedEvent.how}</p>
               </div>
             </div>
 
@@ -139,45 +202,43 @@ export function EventDetailPage() {
                   onClick={() => {
                     setEditingEvent((current) => !current)
                     setEventForm({
-                      title: eventRecord.title,
-                      eventAt: eventRecord.eventAt,
-                      location: eventRecord.location,
-                      what: eventRecord.what,
-                      how: eventRecord.how,
-                      decisionSummary: eventRecord.decisionSummary,
+                      title: selectedEvent.title,
+                      eventAt: selectedEvent.eventAt,
+                      location: selectedEvent.location,
+                      what: selectedEvent.what,
+                      how: selectedEvent.how,
+                      decisionSummary: selectedEvent.decisionSummary,
                     })
                   }}
                   type="button"
                 >
-                  {editingEvent ? '수정 닫기' : '이벤트 수정'}
+                  {editingEvent ? '수정 닫기' : '정거장 수정'}
                 </button>
                 {isAdmin ? (
                   <button
                     className="danger-button"
                     onClick={() => {
-                      if (window.confirm('정말로 이 일정을 영구 삭제하시겠습니까?')) {
-                        void deleteEvent(eventRecord.id)
+                      if (window.confirm('이 정거장과 연결된 메모리, 코멘트를 삭제할까요?')) {
+                        void deleteEvent(selectedEvent.id).then(() => navigate('/events'))
                       }
                     }}
                     type="button"
                   >
-                    이벤트 삭제
+                    정거장 삭제
                   </button>
                 ) : null}
               </div>
             ) : null}
 
             {editingEvent && eventForm ? (
-              <form className="form-grid" onSubmit={handleEventUpdate}>
+              <form className="form-grid edit-panel" onSubmit={handleEventUpdate}>
                 <div className="field">
                   <label htmlFor="edit-title">제목</label>
                   <input
                     id="edit-title"
                     value={eventForm.title}
                     onChange={(eventObject) =>
-                      setEventForm((current) =>
-                        current ? { ...current, title: eventObject.target.value } : current,
-                      )
+                      setEventForm((current) => (current ? { ...current, title: eventObject.target.value } : current))
                     }
                   />
                 </div>
@@ -214,9 +275,7 @@ export function EventDetailPage() {
                     id="edit-what"
                     value={eventForm.what}
                     onChange={(eventObject) =>
-                      setEventForm((current) =>
-                        current ? { ...current, what: eventObject.target.value } : current,
-                      )
+                      setEventForm((current) => (current ? { ...current, what: eventObject.target.value } : current))
                     }
                   />
                 </div>
@@ -226,14 +285,12 @@ export function EventDetailPage() {
                     id="edit-how"
                     value={eventForm.how}
                     onChange={(eventObject) =>
-                      setEventForm((current) =>
-                        current ? { ...current, how: eventObject.target.value } : current,
-                      )
+                      setEventForm((current) => (current ? { ...current, how: eventObject.target.value } : current))
                     }
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="edit-summary">결정 요약</label>
+                  <label htmlFor="edit-summary">확정 요약</label>
                   <textarea
                     id="edit-summary"
                     value={eventForm.decisionSummary}
@@ -244,306 +301,258 @@ export function EventDetailPage() {
                     }
                   />
                 </div>
-                <div className="stack-actions">
-                  <button className="primary-button" type="submit">
-                    이벤트 저장
-                  </button>
-                </div>
+                <button className="primary-button" type="submit">
+                  정거장 저장
+                </button>
               </form>
             ) : null}
           </article>
 
           <article className="panel">
-            <div className="section-heading">
-              <span className="section-heading__eyebrow">Memories</span>
-              <h2>추억 기록</h2>
-              <p>사진과 코멘트가 한 이벤트 아래에 모여, 그날의 분위기를 다시 볼 수 있습니다.</p>
+            <div className="section-heading section-heading--split">
+              <div>
+                <span className="section-heading__eyebrow">Memories</span>
+                <h2>그날의 장면</h2>
+                <p>사진과 코멘트를 이 정거장 아래에 이어 붙입니다.</p>
+              </div>
+              <span className="pill">{eventMemories.length}개 메모리</span>
             </div>
 
-            <div className="memory-list">
+            {eventMemories.length === 0 ? (
+              <div className="empty-card">아직 남겨진 장면이 없습니다. 첫 사진이나 메모를 남겨보세요.</div>
+            ) : null}
+
+            <div className="memory-grid">
               {eventMemories.map((memory) => {
                 const authorName = resolveProfileName(memory.authorId, profiles)
                 const authorAvatar = resolveProfileAvatar(memory.authorId, profiles)
-                const relatedComments = comments.filter((comment) => comment.memoryId === memory.id)
-                const canEditMemory = Boolean(
-                  currentUser && (isAdmin || currentUser.id === memory.authorId),
-                )
-                const activeEdit =
-                  memoryEdits[memory.id] ?? {
-                    eventId: eventRecord.id,
-                    caption: memory.caption,
-                    recordedAt: memory.recordedAt,
-                  }
+                const memoryComments = comments.filter((comment) => comment.memoryId === memory.id)
+                const canEditMemory = Boolean(currentUser && (isAdmin || currentUser.id === memory.authorId))
+                const isEditingMemory = editingMemoryId === memory.id
 
                 return (
                   <article className="memory-card" key={memory.id}>
-                    <div className="memory-meta">
-                      <img
-                        alt={authorName}
-                        src={authorAvatar}
-                        style={{ width: 36, height: 36, borderRadius: '50%' }}
-                      />
-                      <span>{authorName}</span>
-                      <span>{formatDateTime(memory.recordedAt)}</span>
-                    </div>
-                    <p>{memory.caption}</p>
-                    <div className="memory-card__image">
-                      <img
-                        alt={`${eventRecord.title} 메모리`}
-                        src={memory.photoUrl || FALLBACK_IMAGE}
-                        onError={(eventObject) => {
-                          eventObject.currentTarget.src = FALLBACK_IMAGE
-                        }}
-                      />
-                    </div>
-
-                    {canEditMemory ? (
-                      <div className="stack-actions">
-                        <button
-                          className="secondary-button"
-                          onClick={() =>
-                            setEditingMemoryId((current) => (current === memory.id ? null : memory.id))
-                          }
-                          type="button"
-                        >
-                          {editingMemoryId === memory.id ? '수정 닫기' : '메모리 수정'}
-                        </button>
-                        {isAdmin ? (
-                          <button
-                            className="danger-button"
-                            onClick={() => {
-                              if (window.confirm('정말로 이 메모리를 영구 삭제하시겠습니까?')) {
-                                void deleteMemory(memory.id)
-                              }
-                            }}
-                            type="button"
-                          >
-                            메모리 삭제
-                          </button>
-                        ) : null}
+                    <img
+                      alt={`${authorName}의 메모리 사진`}
+                      src={memory.photoUrl || FALLBACK_IMAGE}
+                      onError={(eventObject) => {
+                        eventObject.currentTarget.src = FALLBACK_IMAGE
+                      }}
+                    />
+                    <div className="memory-card__body">
+                      <div className="comment-author">
+                        <img alt="" src={authorAvatar} />
+                        <span>{authorName}</span>
+                        <small>{formatDateTime(memory.recordedAt)}</small>
                       </div>
-                    ) : null}
 
-                    {editingMemoryId === memory.id ? (
-                      <form
-                        className="form-grid"
-                        onSubmit={(eventObject) => {
-                          eventObject.preventDefault()
-                          void updateMemory(
-                            memory.id,
-                            activeEdit,
-                            memoryEditFiles[memory.id] ?? null,
-                            memoryEditUrls[memory.id] ?? memory.photoUrl,
-                          )
-                            .then(() => {
-                              setEditingMemoryId(null)
-                              setFeedback('메모리를 수정했습니다.')
-                            })
-                            .catch((error) => {
-                              setFeedback(
-                                error instanceof Error ? error.message : '메모리 수정에 실패했습니다.',
-                              )
-                            })
-                        }}
-                      >
-                        <div className="field">
-                          <label htmlFor={`memory-caption-${memory.id}`}>캡션</label>
-                          <textarea
-                            id={`memory-caption-${memory.id}`}
-                            value={activeEdit.caption}
-                            onChange={(eventObject) =>
-                              setMemoryEdits((current) => ({
-                                ...current,
-                                [memory.id]: { ...activeEdit, caption: eventObject.target.value },
-                              }))
-                            }
-                          />
-                        </div>
-                        <div className="form-grid form-grid--two">
+                      {isEditingMemory ? (
+                        <div className="form-grid edit-panel">
                           <div className="field">
-                            <label htmlFor={`memory-date-${memory.id}`}>기록 시각</label>
-                            <input
-                              id={`memory-date-${memory.id}`}
-                              type="datetime-local"
-                              value={activeEdit.recordedAt}
+                            <label htmlFor={`memory-caption-${memory.id}`}>메모리 캡션 수정</label>
+                            <textarea
+                              id={`memory-caption-${memory.id}`}
+                              value={memoryEdits[memory.id]?.caption ?? memory.caption}
                               onChange={(eventObject) =>
                                 setMemoryEdits((current) => ({
                                   ...current,
-                                  [memory.id]: { ...activeEdit, recordedAt: eventObject.target.value },
+                                  [memory.id]: {
+                                    ...(current[memory.id] ?? {
+                                      eventId: selectedEvent.id,
+                                      caption: memory.caption,
+                                      recordedAt: memory.recordedAt,
+                                    }),
+                                    caption: eventObject.target.value,
+                                  },
                                 }))
                               }
                             />
                           </div>
                           <div className="field">
-                            <label htmlFor={`memory-url-${memory.id}`}>사진 URL</label>
+                            <label htmlFor={`memory-recorded-${memory.id}`}>기록 시각 수정</label>
+                            <input
+                              id={`memory-recorded-${memory.id}`}
+                              type="datetime-local"
+                              value={memoryEdits[memory.id]?.recordedAt ?? memory.recordedAt}
+                              onChange={(eventObject) =>
+                                setMemoryEdits((current) => ({
+                                  ...current,
+                                  [memory.id]: {
+                                    ...(current[memory.id] ?? {
+                                      eventId: selectedEvent.id,
+                                      caption: memory.caption,
+                                      recordedAt: memory.recordedAt,
+                                    }),
+                                    recordedAt: eventObject.target.value,
+                                  },
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label htmlFor={`memory-url-${memory.id}`}>사진 URL 수정</label>
                             <input
                               id={`memory-url-${memory.id}`}
                               value={memoryEditUrls[memory.id] ?? memory.photoUrl}
                               onChange={(eventObject) =>
-                                setMemoryEditUrls((current) => ({
+                                setMemoryEditUrls((current) => ({ ...current, [memory.id]: eventObject.target.value }))
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label htmlFor={`memory-file-${memory.id}`}>사진 파일 교체</label>
+                            <input
+                              id={`memory-file-${memory.id}`}
+                              accept="image/jpeg,image/png,image/webp"
+                              type="file"
+                              onChange={(eventObject) =>
+                                setMemoryEditFiles((current) => ({
                                   ...current,
-                                  [memory.id]: eventObject.target.value,
+                                  [memory.id]: eventObject.target.files?.[0] ?? null,
                                 }))
                               }
                             />
                           </div>
+                          <div className="stack-actions">
+                            <button className="primary-button" onClick={() => void handleMemoryUpdate(memory.id)} type="button">
+                              메모리 저장
+                            </button>
+                            <button className="secondary-button" onClick={() => setEditingMemoryId(null)} type="button">
+                              취소
+                            </button>
+                          </div>
                         </div>
-                        <div className="field">
-                          <label htmlFor={`memory-file-${memory.id}`}>새 사진 업로드</label>
-                          <input
-                            id={`memory-file-${memory.id}`}
-                            type="file"
-                            accept="image/*"
-                            onChange={(eventObject) => {
-                              const file = eventObject.target.files?.[0] ?? null
-                              if (file) {
-                                const error = validateImageFile(file)
-                                if (error) {
-                                  alert(error)
-                                  eventObject.target.value = ''
-                                  setMemoryEditFiles((current) => ({
-                                    ...current,
-                                    [memory.id]: null,
-                                  }))
-                                  return
-                                }
-                              }
-                              setMemoryEditFiles((current) => ({
+                      ) : (
+                        <p>{memory.caption}</p>
+                      )}
+
+                      {canEditMemory && !isEditingMemory ? (
+                        <div className="stack-actions">
+                          <button
+                            className="secondary-button"
+                            onClick={() => {
+                              setEditingMemoryId(memory.id)
+                              setMemoryEdits((current) => ({
                                 ...current,
-                                [memory.id]: file,
+                                [memory.id]: {
+                                  eventId: selectedEvent.id,
+                                  caption: memory.caption,
+                                  recordedAt: memory.recordedAt,
+                                },
                               }))
+                              setMemoryEditUrls((current) => ({ ...current, [memory.id]: memory.photoUrl }))
                             }}
-                          />
+                            type="button"
+                          >
+                            메모리 수정
+                          </button>
+                          {isAdmin ? (
+                            <button
+                              className="danger-button"
+                              onClick={() => void deleteMemory(memory.id)}
+                              type="button"
+                            >
+                              메모리 삭제
+                            </button>
+                          ) : null}
                         </div>
-                        <button className="primary-button" type="submit">
-                          메모리 저장
-                        </button>
-                      </form>
-                    ) : null}
+                      ) : null}
 
-                    <div className="comment-list">
-                      {relatedComments.map((comment) => {
-                        const canEditComment = Boolean(
-                          currentUser && (isAdmin || currentUser.id === comment.authorId),
-                        )
+                      <div className="comment-list">
+                        {memoryComments.map((comment) => {
+                          const canEditComment = Boolean(currentUser && (isAdmin || currentUser.id === comment.authorId))
+                          const isEditingComment = editingCommentId === comment.id
 
-                        return (
-                          <div className="comment-card" key={comment.id}>
-                            <div className="comment-meta">
-                              <span>{resolveProfileName(comment.authorId, profiles)}</span>
-                              <span>{formatDateTime(comment.createdAt)}</span>
-                            </div>
-
-                            {editingCommentId === comment.id ? (
-                              <form
-                                className="form-grid"
-                                onSubmit={(eventObject) => {
-                                  eventObject.preventDefault()
-                                  const payload: CommentInput = {
-                                    memoryId: memory.id,
-                                    content: commentDrafts[comment.id] ?? comment.content,
-                                  }
-                                  void updateComment(comment.id, payload)
-                                    .then(() => {
-                                      setEditingCommentId(null)
-                                      setFeedback('코멘트를 수정했습니다.')
-                                    })
-                                    .catch((error) => {
-                                      setFeedback(
-                                        error instanceof Error ? error.message : '코멘트 수정에 실패했습니다.',
-                                      )
-                                    })
-                                }}
-                              >
-                                <div className="field">
-                                  <label htmlFor={`comment-edit-${comment.id}`}>코멘트</label>
-                                  <textarea
-                                    id={`comment-edit-${comment.id}`}
-                                    value={commentDrafts[comment.id] ?? comment.content}
-                                    onChange={(eventObject) =>
-                                      setCommentDrafts((current) => ({
-                                        ...current,
-                                        [comment.id]: eventObject.target.value,
-                                      }))
-                                    }
-                                  />
-                                </div>
-                                <button className="primary-button" type="submit">
-                                  코멘트 저장
-                                </button>
-                              </form>
-                            ) : (
-                              <p>{comment.content}</p>
-                            )}
-
-                            {canEditComment ? (
-                              <div className="stack-actions">
-                                <button
-                                  className="secondary-button"
-                                  onClick={() =>
-                                    setEditingCommentId((current) =>
-                                      current === comment.id ? null : comment.id,
-                                    )
-                                  }
-                                  type="button"
-                                >
-                                  {editingCommentId === comment.id ? '수정 닫기' : '코멘트 수정'}
-                                </button>
-                                {isAdmin ? (
-                                  <button
-                                    className="danger-button"
-                                    onClick={() => {
-                                      if (window.confirm('정말로 이 코멘트를 영구 삭제하시겠습니까?')) {
-                                        void deleteComment(comment.id)
+                          return (
+                            <div className="comment-card" key={comment.id}>
+                              <div className="comment-author">
+                                <img alt="" src={resolveProfileAvatar(comment.authorId, profiles)} />
+                                <span>{resolveProfileName(comment.authorId, profiles)}</span>
+                                <small>{formatDateTime(comment.createdAt)}</small>
+                              </div>
+                              {isEditingComment ? (
+                                <div className="form-grid edit-panel">
+                                  <div className="field">
+                                    <label htmlFor={`comment-edit-${comment.id}`}>코멘트 수정</label>
+                                    <textarea
+                                      id={`comment-edit-${comment.id}`}
+                                      value={commentDrafts[comment.id] ?? comment.content}
+                                      onChange={(eventObject) =>
+                                        setCommentDrafts((current) => ({
+                                          ...current,
+                                          [comment.id]: eventObject.target.value,
+                                        }))
                                       }
+                                    />
+                                  </div>
+                                  <div className="stack-actions">
+                                    <button
+                                      className="primary-button"
+                                      onClick={() => void handleCommentUpdate(comment.id)}
+                                      type="button"
+                                    >
+                                      코멘트 저장
+                                    </button>
+                                    <button
+                                      className="secondary-button"
+                                      onClick={() => setEditingCommentId(null)}
+                                      type="button"
+                                    >
+                                      취소
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p>{comment.content}</p>
+                              )}
+
+                              {canEditComment && !isEditingComment ? (
+                                <div className="stack-actions">
+                                  <button
+                                    className="secondary-button"
+                                    onClick={() => {
+                                      setEditingCommentId(comment.id)
+                                      setCommentDrafts((current) => ({ ...current, [comment.id]: comment.content }))
                                     }}
                                     type="button"
                                   >
-                                    코멘트 삭제
+                                    코멘트 수정
                                   </button>
-                                ) : null}
-                              </div>
-                            ) : null}
-                          </div>
-                        )
-                      })}
+                                  {isAdmin ? (
+                                    <button
+                                      className="danger-button"
+                                      onClick={() => void deleteComment(comment.id)}
+                                      type="button"
+                                    >
+                                      코멘트 삭제
+                                    </button>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                            </div>
+                          )
+                        })}
+                      </div>
 
                       {canWrite ? (
                         <form
-                          className="form-grid"
+                          className="comment-form"
                           onSubmit={(eventObject) => {
                             eventObject.preventDefault()
-                            const content = commentForm[memory.id]?.trim()
-                            if (!content) {
-                              return
-                            }
-
-                            void createComment({ memoryId: memory.id, content })
-                              .then(() => {
-                                setCommentForm((current) => ({ ...current, [memory.id]: '' }))
-                                setFeedback('코멘트를 등록했습니다.')
-                              })
-                              .catch((error) => {
-                                setFeedback(
-                                  error instanceof Error ? error.message : '코멘트 등록에 실패했습니다.',
-                                )
-                              })
+                            void handleCommentSubmit(memory.id)
                           }}
                         >
-                          <div className="field">
-                            <label htmlFor={`comment-create-${memory.id}`}>코멘트 남기기</label>
+                          <label className="field" htmlFor={`comment-${memory.id}`}>
+                            <span>코멘트 남기기</span>
                             <textarea
-                              id={`comment-create-${memory.id}`}
-                              placeholder="그날 떠오르는 장면이나 감정을 남겨보세요."
+                              id={`comment-${memory.id}`}
                               value={commentForm[memory.id] ?? ''}
                               onChange={(eventObject) =>
-                                setCommentForm((current) => ({
-                                  ...current,
-                                  [memory.id]: eventObject.target.value,
-                                }))
+                                setCommentForm((current) => ({ ...current, [memory.id]: eventObject.target.value }))
                               }
+                              placeholder="그날의 후기를 짧게 남겨주세요."
                             />
-                          </div>
+                          </label>
                           <button className="secondary-button" type="submit">
                             코멘트 추가
                           </button>
@@ -553,99 +562,70 @@ export function EventDetailPage() {
                   </article>
                 )
               })}
-
-              {eventMemories.length === 0 ? (
-                <div className="empty-card">아직 등록된 메모리가 없습니다. 첫 장면을 기록해보세요.</div>
-              ) : null}
             </div>
           </article>
         </div>
 
-        <aside className="grid">
-          <article className="panel">
-            <div className="section-heading">
-              <span className="section-heading__eyebrow">Write memory</span>
-              <h2>새 메모리 등록</h2>
-            </div>
+        <aside className="panel memory-submit-panel">
+          <div className="section-heading">
+            <span className="section-heading__eyebrow">Add memory</span>
+            <h2>이 정거장에 장면 남기기</h2>
+            <p>사진 파일 또는 URL을 넣고, 그 순간의 설명을 함께 남깁니다.</p>
+          </div>
 
-            <form className="form-grid" onSubmit={handleMemorySubmit}>
-              <div className="field">
-                <label htmlFor="memory-caption">메모리 캡션</label>
-                <textarea
-                  id="memory-caption"
-                  placeholder="그날의 장면, 감정, 짧은 후기"
-                  value={memoryForm.caption}
-                  onChange={(eventObject) =>
-                    setMemoryForm((current) => ({ ...current, caption: eventObject.target.value }))
-                  }
-                  disabled={!canWrite}
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="memory-recorded-at">기록 시각</label>
-                <input
-                  id="memory-recorded-at"
-                  type="datetime-local"
-                  value={memoryForm.recordedAt}
-                  onChange={(eventObject) =>
-                    setMemoryForm((current) => ({ ...current, recordedAt: eventObject.target.value }))
-                  }
-                  disabled={!canWrite}
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="memory-file">사진 업로드</label>
-                <input
-                  id="memory-file"
-                  type="file"
-                  accept="image/*"
-                  onChange={(eventObject) => {
-                    const file = eventObject.target.files?.[0] ?? null
-                    if (file) {
-                      const error = validateImageFile(file)
-                      if (error) {
-                        alert(error)
-                        eventObject.target.value = ''
-                        setMemoryFile(null)
-                        return
-                      }
-                    }
-                    setMemoryFile(file)
-                  }}
-                  disabled={!canWrite}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="memory-url">또는 사진 URL</label>
-                <input
-                  id="memory-url"
-                  value={memoryUrl}
-                  onChange={(eventObject) => setMemoryUrl(eventObject.target.value)}
-                  placeholder="https://..."
-                  disabled={!canWrite}
-                />
-              </div>
-              <button className="primary-button" disabled={!canWrite} type="submit">
-                메모리 남기기
-              </button>
-            </form>
+          <form className="form-grid" onSubmit={handleMemorySubmit}>
+            <div className="field">
+              <label htmlFor="memory-caption">메모리 캡션</label>
+              <textarea
+                id="memory-caption"
+                value={memoryForm.caption}
+                onChange={(eventObject) =>
+                  setMemoryForm((current) => ({ ...current, caption: eventObject.target.value }))
+                }
+                placeholder="사진에 남기고 싶은 말을 적어주세요."
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="recorded-at">기록 시각</label>
+              <input
+                id="recorded-at"
+                type="datetime-local"
+                value={memoryForm.recordedAt}
+                onChange={(eventObject) =>
+                  setMemoryForm((current) => ({ ...current, recordedAt: eventObject.target.value }))
+                }
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="memory-file">사진 파일</label>
+              <input
+                id="memory-file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={!canWrite}
+                type="file"
+                onChange={(eventObject) => setMemoryFile(eventObject.target.files?.[0] ?? null)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="memory-url">또는 사진 URL</label>
+              <input
+                id="memory-url"
+                disabled={!canWrite}
+                value={memoryUrl}
+                onChange={(eventObject) => setMemoryUrl(eventObject.target.value)}
+                placeholder="https://..."
+              />
+            </div>
 
             {feedback ? <div className="notice-card">{feedback}</div> : null}
-          </article>
 
-          <article className="panel">
-            <div className="section-heading">
-              <span className="section-heading__eyebrow">운영 메모</span>
-              <h2>이벤트 기록 원칙</h2>
-            </div>
-            <ul className="rail-list">
-              <li>단체방에서 결정된 사안만 기록합니다.</li>
-              <li>사진과 후기는 당일 분위기를 잘 전달하는 장면 위주로 남깁니다.</li>
-              <li>삭제는 운영자만 수행합니다.</li>
-            </ul>
-          </article>
+            <button className="primary-button" disabled={!canWrite} type="submit">
+              메모리 남기기
+            </button>
+            {!canWrite ? <p className="muted">승인된 사용자만 메모리를 남길 수 있습니다.</p> : null}
+          </form>
         </aside>
       </div>
     </section>

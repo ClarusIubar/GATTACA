@@ -12,6 +12,11 @@
     "pages:deploy": "node scripts/deploy-pages.mjs --project-name=gattaca --branch main",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:unit": "vitest run src/App.test.tsx src/test/notification.test.ts src/test/repository.test.ts worker/auth.test.ts worker/kakao-notification.test.ts",
+    "test:integration": "vitest run src/test/app-context.test.tsx src/test/app-context-cloudflare.test.tsx worker/worker.test.ts worker/router-crud.test.ts worker/d1-repository.test.ts worker/authorization.test.ts worker/upload.test.ts",
+    "test:regression": "vitest run src/App.setup.test.tsx src/test/e2e-flow.test.tsx",
+    "test:smoke": "npm run build && npm run live:check:kakao -- --api-url https://gattaca.jamissue.com",
+    "test:e2e": "vitest run src/test/e2e-flow.test.tsx",
     "worker:deploy:dry-run": "wrangler deploy --dry-run",
     "worker:deploy": "wrangler deploy"
   },

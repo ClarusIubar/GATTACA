@@ -1,18 +1,19 @@
 # 추억열차 Wiki
 
-추억열차는 카카오톡 단체방에서 이미 결정된 일정과 그날의 사진, 코멘트를 남기는 메모리얼 서비스입니다.
+추억열차는 카카오톡 단체방에서 확정된 일정과 그날의 사진, 메모, 코멘트를 하나의 정거장으로 보관하는 메모리얼 서비스입니다.
 
-현재 구현은 GitHub Wiki의 기획 의도 기준으로 다음 범위까지 도달했습니다.
+## 현재 구현 범위
 
 - Cloudflare Pages 프론트엔드
 - Cloudflare Workers 백엔드
-- D1 기반 이벤트 / 메모리 / 코멘트 CRUD
+- D1 기반 이벤트/메모리/코멘트 CRUD
 - KV 기반 세션
 - R2 기반 사진 업로드
 - 승인 사용자 CRU / 운영자 delete 권한 강제
-- Kakao OAuth 및 Kakao relay 경계 구현
-
-마지막 남은 단계는 실제 Kakao Worker secrets 주입과 live OAuth 수신 검증입니다.
+- Kakao OAuth callback 경계
+- Kakao relay endpoint
+- 추억열차 콘셉트 기반 홈/목록/상세/등록/소개 UI
+- TDD 계층과 SDD 추적 문서
 
 ## 빠른 링크
 
@@ -25,41 +26,13 @@
 - 운영 정책: [Operations-Policy](Operations-Policy)
 - 개발 기록: [Development-Log](Development-Log)
 - Kakao relay 상태: [Kakao-Relay-Status](Kakao-Relay-Status)
+- SDD 추적성: [SDD-Traceability](SDD-Traceability)
 
-## 현재 live 상태
+## live 기준
 
-- Pages latest verified deployment:
-  - [https://61610380.gattaca-di0.pages.dev/](https://61610380.gattaca-di0.pages.dev/)
-- Worker verified health:
-  - [https://gattaca-backend.yhh4433.workers.dev/api/health](https://gattaca-backend.yhh4433.workers.dev/api/health)
-- Worker runtime readiness:
-  - [https://gattaca-backend.yhh4433.workers.dev/api/runtime-status](https://gattaca-backend.yhh4433.workers.dev/api/runtime-status)
-
-현재 `runtime-status` 기준:
-
-- `bindings.db = true`
-- `bindings.session = true`
-- `bindings.bucket = true`
-- `auth.kakaoRestApiKeyConfigured = false`
-- `auth.kakaoClientSecretConfigured = false`
-- `auth.kakaoOAuthConfigured = false`
-
-즉 Cloudflare 인프라는 live로 붙어 있지만, Kakao OAuth secret은 아직 주입되지 않았습니다.
-
-## 지금 가능한 것
-
-- 공개 페이지 렌더링 확인
-- 이벤트 / 메모리 / 코멘트 구조 확인
-- production에서 demo fallback 없이 live 배포 상태 확인
-- Kakao 미구성 상태가 UI에서 명확히 드러나는지 확인
-
-## 아직 남아 있는 것
-
-- 실제 Kakao 로그인 redirect/callback
-- live 세션 생성 readback
-- 실제 Kakao memo relay 수신 확인
-
-이 단계는 Cloudflare Worker secrets 주입 후 바로 검증할 수 있습니다.
+- Production: [https://gattaca.jamissue.com/](https://gattaca.jamissue.com/)
+- Auth callback: [https://gattaca.jamissue.com/api/auth/callback](https://gattaca.jamissue.com/api/auth/callback)
+- Runtime status: [https://gattaca.jamissue.com/api/runtime-status](https://gattaca.jamissue.com/api/runtime-status)
 
 ## 필요한 설정값
 
@@ -67,24 +40,28 @@ GitHub Secrets:
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
-
-Frontend local/manual build env:
-
-- `VITE_CLOUDFLARE_API_URL`
-- `VITE_ADMIN_USER_ID` (선택)
-- `VITE_ENABLE_DEMO_MODE`
-
-Worker vars/secrets:
-
-- `ADMIN_AUTH_USER_ID` (선택)
 - `KAKAO_REST_API_KEY`
 - `KAKAO_CLIENT_SECRET`
 
-## 구현 완료 경계
+Frontend env:
 
-현재 평가는 다음과 같습니다.
+- `VITE_CLOUDFLARE_API_URL`
+- `VITE_ADMIN_USER_ID` optional
+- `VITE_ENABLE_DEMO_MODE` local/test only
 
-- "카카오 API만 붙이면 되는 수준"까지는 이미 도달
-- 실제 Kakao account 기준 end-to-end 완료는 아직 미검증
+Worker vars/secrets:
 
-따라서 지금은 완료 직전 상태이고, 남은 것은 secret 주입 후 live readback입니다.
+- `APP_BASE_URL`
+- `SESSION_TTL_SECONDS`
+- `ADMIN_AUTH_USER_ID` optional
+- `KAKAO_REST_API_KEY`
+- `KAKAO_CLIENT_SECRET`
+
+## 완료 기준
+
+추억열차 v1은 단순 정적 껍데기가 아니라 다음 증거를 모두 만족해야 완료로 본다.
+
+- UI가 정거장/노선/메모리 콘셉트로 실제 사용 흐름을 설명한다.
+- unit, integration, regression, e2e, build, smoke 검증이 통과한다.
+- docs 원본과 Wiki 원본이 구현 범위, 권한, 배포, Kakao 키 설정을 같은 용어로 설명한다.
+- main에 머지된 코드가 production domain에 배포된다.

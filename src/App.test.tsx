@@ -13,15 +13,17 @@ test('renders demo mode banner when runtime falls back to demo', async () => {
   expect(await screen.findByText('데모 모드')).toBeInTheDocument()
 })
 
-test('shows home hero content', async () => {
+test('shows home hero content with train concept and operational status', async () => {
   render(<App />)
-  expect(await screen.findByText('함께 정한 하루를, 오래 남는 기록으로.')).toBeInTheDocument()
+  expect(await screen.findByText('단톡방의 약속을 오래 남는 정거장으로.')).toBeInTheDocument()
+  expect(screen.getByText('오늘의 운행 상태')).toBeInTheDocument()
+  expect(screen.getByText('기록 노선도')).toBeInTheDocument()
 })
 
 test('renders persona switcher and allows UI switching in header', async () => {
   render(<App />)
 
-  expect(screen.getByText('비로그인 방문객')).toBeInTheDocument()
+  expect(screen.getByText('비로그인 방문자')).toBeInTheDocument()
   expect(screen.getByText('게스트')).toBeInTheDocument()
 
   const select = screen.getByLabelText('데모 권한') as HTMLSelectElement
