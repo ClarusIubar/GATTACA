@@ -11,6 +11,11 @@
 - How: 모든 사용자-facing datetime/time 입력을 날짜+시+분 조합으로 통일하고, 이벤트 카드 핵심 정보를 라벨화했으며, submit 체크리스트와 About route를 제거하고, 운영실에 승인/반려/삭제/상세 진입/상태 요약을 추가했다.
 - Remaining gap: none. GitHub Wiki sync completed; final wiki commit is recorded in the completion report.
 - Status: completed
+- 문서 경로: `src/App.tsx`, `src/pages/SubmitPage.tsx`, `src/pages/EventsPage.tsx`, `src/pages/EventDetailPage.tsx`, `src/pages/AdminPage.tsx`, `src/index.css`, `docs/wiki/*`
+- 왜 해결: 핵심 UX와 운영보드를 실사용 가능 수준으로 만들기 위해.
+- 무슨 문제: 시간 입력, 이벤트 카드 시인성, 불필요한 체크리스트/운영 원칙 탭, 읽기 전용 운영실 문제가 남아 있었다.
+- 어떻게 해결: 날짜+시+분 입력 통일, 이벤트 핵심 정보 라벨화, About route 제거, 운영실 승인/반려/삭제/상세 진입/요약 추가.
+- 남은 gap: 없음.
 
 # Task ID Ledger
 
@@ -27,6 +32,7 @@
 
 | Task ID | Issue | PR | Merge commit | Document path | Why | Problem | How | Remaining gap | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| TSK-002-16 | https://github.com/ClarusIubar/GATTACA/issues/42 | https://github.com/ClarusIubar/GATTACA/pull/43 | `1ca6bcde77291a014c6193aca3fb9dfb392a9dba` | `src/App.tsx`, `src/pages/SubmitPage.tsx`, `src/pages/EventsPage.tsx`, `src/pages/EventDetailPage.tsx`, `src/pages/AdminPage.tsx`, `src/index.css`, `docs/wiki/*` | 핵심 UX와 운영보드를 실사용 가능 수준으로 만들기 위해 | 시간 입력, 이벤트 카드 시인성, 불필요한 체크리스트/운영 원칙 탭, 읽기 전용 운영실 문제가 남아 있었다 | 날짜+시+분 입력 통일, 이벤트 핵심 정보 라벨화, About route 제거, 운영실 승인/반려/삭제/상세 진입/요약 추가 | 없음. production readback과 wiki sync 통과 | completed |
 | TSK-001-01 | https://github.com/ClarusIubar/GATTACA/issues/3 | https://github.com/ClarusIubar/GATTACA/pull/10 | not applicable | `docs/TASK_ID_LEDGER.md` | 초기 위키/테스트 구조를 정리하기 위해 | 저장소 구조와 검증 기준이 약했다 | DIP 구조와 Vitest 기반 테스트 골격을 추가했다 | TSK-002 계열에서 실사용 구조로 확장 | completed |
 | TSK-001-02 | https://github.com/ClarusIubar/GATTACA/issues/4 | not applicable | not applicable | `docs/sql/supabase-schema.sql` | 초기 데이터 모델과 보안 규칙을 남기기 위해 | Supabase 초안과 현재 Cloudflare 구조가 분리되어 있었다 | PostgreSQL schema/RLS 초안을 문서화했다 | 현재 요구는 Cloudflare D1/R2/KV로 이동 | completed |
 | TSK-001-03 | https://github.com/ClarusIubar/GATTACA/issues/5 | not applicable | not applicable | `src/lib/app-context.tsx` | 로그인과 프로필 생성 흐름을 잡기 위해 | 로그인 후 사용자 생명주기 로직이 부족했다 | signIn/ensureProfile 흐름 초안을 정리했다 | Worker OAuth/session 구조로 대체 | completed |
