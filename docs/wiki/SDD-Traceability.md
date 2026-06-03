@@ -60,9 +60,12 @@ SDD 완료는 문서 존재만으로 판단하지 않는다. PR merge, productio
 ## TSK-002-16 Traceability
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/42
+- PR: https://github.com/ClarusIubar/GATTACA/pull/43
+- Merge commit: `1ca6bcde77291a014c6193aca3fb9dfb392a9dba`
 - Scope: 핵심 UX와 운영성 수습.
 - Implementation: `src/App.tsx`, `src/pages/SubmitPage.tsx`, `src/pages/EventsPage.tsx`, `src/pages/EventDetailPage.tsx`, `src/pages/AdminPage.tsx`, `src/index.css`.
 - Contract: `eventAt`와 `recordedAt`는 계속 `YYYY-MM-DDTHH:mm` 문자열이다.
 - UI rule: `datetime-local`, native time input, `/about` navigation, submit checklist panel은 사용자-facing source에 남기지 않는다.
 - Validation: `npm run test:e2e`, `npm run test`, `npm run build`, `npm run lint`, source marker search.
-- Production evidence: pending after main merge.
+- Deploy evidence: Deploy run `26858067408` success, CodeQL run `26858067104` success.
+- Production evidence: `/events`, `/submit`, `/admin` returned 200 with latest asset `/assets/index-CmTD3GaB.js`; app-specific native datetime/time type markers were absent; `/about` and Checklist markers were absent.
