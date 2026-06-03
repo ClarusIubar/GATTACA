@@ -88,4 +88,4 @@
 - 테스트: `npm run test:e2e`, `npm run test`, `npm run build`, `npm run lint`, `npm run test:smoke`, source marker search 통과.
 - 배포: Deploy run `26858067408` success, CodeQL run `26858067104` success.
 - Production readback: `/events`, `/submit`, `/admin`은 200, latest asset `/assets/index-CmTD3GaB.js`, app-specific native datetime/time type marker 없음, `/about`/Checklist marker 없음, `event-facts`/`datetime-select-grid`/`admin-stats` marker 있음.
-- 남은 증거: wiki sync commit.
+- Wiki sync commit: `2acf694`

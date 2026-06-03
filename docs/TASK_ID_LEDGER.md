@@ -9,7 +9,7 @@
 - Why: production UI에서 핵심 정보 시인성, 시간 입력, 불필요한 체크리스트, 운영 원칙 탭, 읽기 전용 운영실 문제가 동시에 남아 있었다.
 - Problem: `/submit`만 고쳐졌고 상세/메모리 입력에는 native datetime picker가 남아 있었으며, 운영실은 승인 외 실제 운영 액션이 부족했다.
 - How: 모든 사용자-facing datetime/time 입력을 날짜+시+분 조합으로 통일하고, 이벤트 카드 핵심 정보를 라벨화했으며, submit 체크리스트와 About route를 제거하고, 운영실에 승인/반려/삭제/상세 진입/상태 요약을 추가했다.
-- Remaining gap: GitHub Wiki sync pending.
+- Remaining gap: none. GitHub Wiki sync commit `2acf694`.
 - Status: completed
 
 # Task ID Ledger
