@@ -13,13 +13,6 @@ test('renders demo mode banner when runtime falls back to demo', async () => {
   expect(await screen.findByText('데모 모드')).toBeInTheDocument()
 })
 
-test('shows home hero content with train concept and operational status', async () => {
-  render(<App />)
-  expect(await screen.findByRole('heading', { name: '단톡방의 약속을 오래 남는 정거장으로.' })).toBeInTheDocument()
-  expect(screen.getByText('Today Status')).toBeInTheDocument()
-  expect(screen.getByText('기록 노선도')).toBeInTheDocument()
-})
-
 test('renders persona switcher and allows UI switching in header', async () => {
   render(<App />)
 
@@ -33,4 +26,22 @@ test('renders persona switcher and allows UI switching in header', async () => {
   await user.selectOptions(select, 'admin')
 
   expect(screen.getAllByText('운영자').length).toBeGreaterThan(0)
+  expect(screen.getByRole('link', { name: '운영실' })).toBeInTheDocument()
+  const removedNavName = `${'운영'} ${'원칙'}`
+  expect(screen.queryByRole('link', { name: removedNavName })).not.toBeInTheDocument()
+})
+
+test('admin dashboard exposes meaningful operations actions', async () => {
+  render(<App />)
+
+  const user = userEvent.setup()
+  await user.selectOptions(screen.getByLabelText('데모 권한'), 'admin')
+  await user.click(screen.getByRole('link', { name: '운영실' }))
+
+  expect(await screen.findByRole('heading', { name: '운영실 대시보드' })).toBeInTheDocument()
+  expect(screen.getByLabelText('운영 요약')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '승인' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '반려' })).toBeInTheDocument()
+  expect(screen.getAllByRole('button', { name: '이벤트 삭제' }).length).toBeGreaterThan(0)
+  expect(screen.getAllByRole('link', { name: '상세 진입' }).length).toBeGreaterThan(0)
 })

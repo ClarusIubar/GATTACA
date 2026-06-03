@@ -99,3 +99,16 @@
 ## 완료 판단
 
 SDD 완료는 문서가 존재하는 것만으로 판단하지 않는다. PR merge, production deploy, live readback, smoke evidence가 함께 있어야 한다.
+## TSK-002-16 Evidence
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/42
+- Branch: `tsk-002-16-ux-operability-cleanup`
+- PR: pending
+- Merge commit: pending
+- Responsibility map: `App.tsx` owns navigation and route availability; `SubmitPage` owns new event input; `EventsPage` owns list readability; `EventDetailPage` owns event/memory date-time input controls; `AdminPage` owns operator actions; AppContext/repository/Worker keep persistence and authorization responsibility.
+- Dependency direction: pages -> AppContext -> repository/Worker. This change does not introduce backend schema or API contract changes.
+- Test seam: source search rejects user-facing `datetime-local`, native time input, `/about` route/nav, and submit checklist markers; E2E covers event creation, detail entry, memory creation, and comment creation; App tests cover admin approval/rejection/delete/detail controls.
+- Scope map: `src/App.tsx`, `src/pages/SubmitPage.tsx`, `src/pages/EventsPage.tsx`, `src/pages/EventDetailPage.tsx`, `src/pages/AdminPage.tsx`, `src/index.css`, `src/App.test.tsx`, `src/test/e2e-flow.test.tsx`, docs/wiki traceability.
+- Architecture risk: preserving partial date/time state is required before composing `YYYY-MM-DDTHH:mm`; otherwise empty memory forms lose the date when hour/minute are selected later. The shared detail date-time selector now preserves partial input until all controls are selected.
+- Local validation: `npm run test:e2e`, `npm run test`, `npm run build`, `npm run lint`, source marker search.
+- Production readback: pending main merge and deployment.

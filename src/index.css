@@ -701,6 +701,13 @@ p {
   gap: 10px;
 }
 
+.datetime-select-grid {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.2fr) repeat(2, minmax(92px, 0.7fr));
+  gap: 10px;
+  align-items: end;
+}
+
 .time-select-field {
   display: grid;
   gap: 6px;
@@ -722,6 +729,110 @@ p {
 
 .event-header {
   margin-bottom: 20px;
+}
+
+.submit-panel--wide {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.station-card__topline,
+.station-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.station-card__location,
+.station-card__author {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.station-card__summary {
+  margin-bottom: 16px;
+}
+
+.event-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.event-facts div {
+  border: 1px solid rgba(95, 66, 43, 0.13);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.event-facts dt {
+  margin-bottom: 5px;
+  color: var(--brand);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.event-facts dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.event-facts--compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 12px 0;
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.admin-user-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-user-row img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.admin-user-row .stack-actions {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+
+.admin-event-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.admin-event-row__actions {
+  display: grid;
+  gap: 10px;
+  min-width: 142px;
 }
 
 .memory-submit-panel {
@@ -806,7 +917,8 @@ p {
   .hero--responsive,
   .operations-grid,
   .two-column,
-  .detail-layout {
+  .detail-layout,
+  .admin-layout {
     grid-template-columns: 1fr;
   }
 
@@ -890,11 +1002,24 @@ p {
 
   .route-steps,
   .stats,
+  .admin-stats,
   .ticket-grid,
   .panel-grid,
   .memory-grid,
+  .event-facts,
+  .event-facts--compact,
+  .datetime-select-grid,
   .form-grid--two {
     grid-template-columns: 1fr;
+  }
+
+  .station-card__footer,
+  .admin-event-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-event-row__actions {
+    min-width: 0;
   }
 
   .route-steps li {
