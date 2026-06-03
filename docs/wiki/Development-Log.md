@@ -96,4 +96,6 @@
 - 문제: 이벤트 상세에서 메모리를 남길 때 사진 파일 또는 URL을 넣지 않으면 Worker가 `photoUrl 값이 필요합니다.`로 400을 반환했고, 댓글을 달 메모리 자체가 생성되지 않았다.
 - 변경: Worker memory create/update에서 누락된 `photoUrl`을 빈 문자열로 저장하도록 계약을 완화했다.
 - 테스트: Worker CRUD 테스트는 사진 없는 메모리 생성 후 댓글 작성까지 검증하고, E2E 테스트는 사진 URL 없이 메모리와 댓글 흐름을 수행한다.
-- 배포 검증: pending.
+- PR: https://github.com/ClarusIubar/GATTACA/pull/45
+- Merge commit: `c6f90b3bd74a0c8394b8e0227eaa4dfcd8697a7a`
+- 배포 검증: Deploy run `26859163244` success, CodeQL run `26859162813` success, `npm.cmd run test:smoke` 통과, production `/events`와 `/api/runtime-status` readback 통과.

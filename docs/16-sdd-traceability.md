@@ -119,12 +119,14 @@ SDD 완료는 문서가 존재하는 것만으로 판단하지 않는다. PR mer
 
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/44
 - Branch: `tsk-002-17-memory-comment-flow`
-- PR: pending
-- Merge commit: pending
+- PR: https://github.com/ClarusIubar/GATTACA/pull/45
+- Merge commit: `c6f90b3bd74a0c8394b8e0227eaa4dfcd8697a7a`
 - Responsibility map: Worker memory handlers own API input validation and persistence defaults; EventDetailPage owns the user flow for creating a memory and then commenting below it; repository/AppContext keep upload resolution but do not require an uploaded image.
 - Dependency direction: EventDetailPage -> AppContext -> repository -> Worker -> D1. The UI may submit a caption-only memory; Worker normalizes missing `photoUrl` to an empty string before storage.
 - Test seam: `worker/router-crud.test.ts` verifies caption-only memory creation and comment creation under that memory; `src/test/e2e-flow.test.tsx` exercises the browser flow without typing a photo URL.
 - Scope map: `worker/handlers.ts`, `worker/router-crud.test.ts`, `src/test/e2e-flow.test.tsx`, docs/wiki traceability.
 - Architecture risk: keeping `MemoryRecord.photoUrl` as a string avoids a schema migration, but empty string becomes the no-photo sentinel. The UI already renders a fallback image when `photoUrl` is empty, so this remains inside the existing contract.
 - Local validation: `npm.cmd run test:e2e`, `npm.cmd run test -- worker/router-crud.test.ts`, `npm.cmd run test`, `npm.cmd run build`, `npm.cmd run lint`, `git diff --check` passed.
-- Production readback: pending.
+- Deploy run: `26859163244` success
+- CodeQL run: `26859162813` success
+- Production readback: `/events` returned 200, `/api/runtime-status` returned 200 with `db/session/bucket=true` and Kakao OAuth configured. Worker deploy log shows version `337c03ee-76ca-44d0-8ec7-393876bd3064` deployed at 100%.

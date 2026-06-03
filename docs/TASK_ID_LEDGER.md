@@ -5,14 +5,14 @@
 - Task ID: TSK-002-17
 - Issue: https://github.com/ClarusIubar/GATTACA/issues/44
 - Branch: `tsk-002-17-memory-comment-flow`
-- PR: pending
-- Merge commit: pending
+- PR: https://github.com/ClarusIubar/GATTACA/pull/45
+- Merge commit: `c6f90b3bd74a0c8394b8e0227eaa4dfcd8697a7a`
 - 문서 경로: `worker/handlers.ts`, `worker/router-crud.test.ts`, `src/test/e2e-flow.test.tsx`, `docs/wiki/*`
 - 왜 해결: 사진 없이 텍스트 메모리를 남긴 뒤 댓글을 이어서 작성할 수 있어야 상세 페이지가 실제 기록장으로 동작한다.
 - 무슨 문제: Worker가 `photoUrl`을 필수로 검증해 사진 파일 또는 URL이 없는 메모리 생성이 400으로 실패했고, 댓글을 달 메모리 자체가 생성되지 않았다.
 - 어떻게 해결: 메모리 create/update에서 누락된 `photoUrl`을 빈 문자열로 저장하도록 계약을 완화하고, 사진 없는 메모리 생성 후 댓글 작성까지 Worker CRUD 테스트와 E2E 테스트로 고정한다.
-- 남은 gap: PR merge, production deploy, live readback pending.
-- Status: active
+- 남은 gap: 없음. main merge, Cloudflare deploy, smoke, production readback 통과.
+- Status: completed
 
 이 문서는 이슈, PR, 구현 범위, 검증 증거를 한 줄로 연결하는 추적성 원장이다.
 
@@ -46,7 +46,7 @@
 
 | Task ID | Issue | PR | Merge commit | Document path | Why | Problem | How | Remaining gap | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TSK-002-17 | https://github.com/ClarusIubar/GATTACA/issues/44 | pending | pending | `worker/handlers.ts`, `worker/router-crud.test.ts`, `src/test/e2e-flow.test.tsx`, `docs/wiki/*` | 사진 없이 텍스트 메모리를 남긴 뒤 댓글을 이어서 작성할 수 있어야 상세 페이지가 실제 기록장으로 동작한다. | Worker가 `photoUrl`을 필수로 검증해 사진 파일 또는 URL이 없는 메모리 생성이 400으로 실패했고, 댓글을 달 메모리 자체가 생성되지 않았다. | 메모리 create/update에서 누락된 `photoUrl`을 빈 문자열로 저장하도록 계약을 완화하고, 사진 없는 메모리 생성 후 댓글 작성까지 Worker CRUD 테스트와 E2E 테스트로 고정한다. | PR merge, production deploy, live readback pending. | active |
+| TSK-002-17 | https://github.com/ClarusIubar/GATTACA/issues/44 | https://github.com/ClarusIubar/GATTACA/pull/45 | `c6f90b3bd74a0c8394b8e0227eaa4dfcd8697a7a` | `worker/handlers.ts`, `worker/router-crud.test.ts`, `src/test/e2e-flow.test.tsx`, `docs/wiki/*` | 사진 없이 텍스트 메모리를 남긴 뒤 댓글을 이어서 작성할 수 있어야 상세 페이지가 실제 기록장으로 동작한다. | Worker가 `photoUrl`을 필수로 검증해 사진 파일 또는 URL이 없는 메모리 생성이 400으로 실패했고, 댓글을 달 메모리 자체가 생성되지 않았다. | 메모리 create/update에서 누락된 `photoUrl`을 빈 문자열로 저장하도록 계약을 완화하고, 사진 없는 메모리 생성 후 댓글 작성까지 Worker CRUD 테스트와 E2E 테스트로 고정한다. | 없음. main merge, Cloudflare deploy, smoke, production readback 통과. | completed |
 | TSK-002-16 | https://github.com/ClarusIubar/GATTACA/issues/42 | https://github.com/ClarusIubar/GATTACA/pull/43 | `1ca6bcde77291a014c6193aca3fb9dfb392a9dba` | `src/App.tsx`, `src/pages/SubmitPage.tsx`, `src/pages/EventsPage.tsx`, `src/pages/EventDetailPage.tsx`, `src/pages/AdminPage.tsx`, `src/index.css`, `docs/wiki/*` | 핵심 UX와 운영보드를 실사용 가능 수준으로 만들기 위해 | 시간 입력, 이벤트 카드 시인성, 불필요한 체크리스트/운영 원칙 탭, 읽기 전용 운영실 문제가 남아 있었다 | 날짜+시+분 입력 통일, 이벤트 핵심 정보 라벨화, About route 제거, 운영실 승인/반려/삭제/상세 진입/요약 추가 | 없음. production readback과 wiki sync 통과 | completed |
 | TSK-001-01 | https://github.com/ClarusIubar/GATTACA/issues/3 | https://github.com/ClarusIubar/GATTACA/pull/10 | not applicable | `docs/TASK_ID_LEDGER.md` | 초기 위키/테스트 구조를 정리하기 위해 | 저장소 구조와 검증 기준이 약했다 | DIP 구조와 Vitest 기반 테스트 골격을 추가했다 | TSK-002 계열에서 실사용 구조로 확장 | completed |
 | TSK-001-02 | https://github.com/ClarusIubar/GATTACA/issues/4 | not applicable | not applicable | `docs/sql/supabase-schema.sql` | 초기 데이터 모델과 보안 규칙을 남기기 위해 | Supabase 초안과 현재 Cloudflare 구조가 분리되어 있었다 | PostgreSQL schema/RLS 초안을 문서화했다 | 현재 요구는 Cloudflare D1/R2/KV로 이동 | completed |
