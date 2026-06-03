@@ -21,6 +21,10 @@
 - 어떻게 해결: 날짜+시+분 입력 통일, 이벤트 핵심 정보 라벨화, About route 제거, 운영실 승인/반려/삭제/상세 진입/요약 추가.
 - 남은 gap: 없음.
 
+| Issue | PR | Merge commit | 문서 경로 | 왜 해결 | 무슨 문제 | 어떻게 해결 | 남은 gap |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| https://github.com/ClarusIubar/GATTACA/issues/42 | https://github.com/ClarusIubar/GATTACA/pull/43 | `1ca6bcde77291a014c6193aca3fb9dfb392a9dba` | `src/App.tsx`, `src/pages/SubmitPage.tsx`, `src/pages/EventsPage.tsx`, `src/pages/EventDetailPage.tsx`, `src/pages/AdminPage.tsx`, `src/index.css`, `docs/wiki/*` | 핵심 UX와 운영보드를 실사용 가능 수준으로 만들기 위해 | 시간 입력, 이벤트 카드 시인성, 불필요한 체크리스트/운영 원칙 탭, 읽기 전용 운영실 문제가 남아 있었다 | 날짜+시+분 입력 통일, 이벤트 핵심 정보 라벨화, About route 제거, 운영실 승인/반려/삭제/상세 진입/요약 추가 | 없음 |
+
 ## Evidence Label Glossary
 
 - Issue: GitHub child issue.
