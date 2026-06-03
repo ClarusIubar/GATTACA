@@ -89,3 +89,11 @@
 - 배포: Deploy run `26858067408` success, CodeQL run `26858067104` success.
 - Production readback: `/events`, `/submit`, `/admin`은 200, latest asset `/assets/index-CmTD3GaB.js`, app-specific native datetime/time type marker 없음, `/about`/Checklist marker 없음, `event-facts`/`datetime-select-grid`/`admin-stats` marker 있음.
 - Wiki sync: GitHub Wiki repository history에서 최종 동기화 commit을 확인한다.
+### TSK-002-17 사진 없는 메모리와 댓글 작성 흐름 복구
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/44
+- Branch: `tsk-002-17-memory-comment-flow`
+- 문제: 이벤트 상세에서 메모리를 남길 때 사진 파일 또는 URL을 넣지 않으면 Worker가 `photoUrl 값이 필요합니다.`로 400을 반환했고, 댓글을 달 메모리 자체가 생성되지 않았다.
+- 변경: Worker memory create/update에서 누락된 `photoUrl`을 빈 문자열로 저장하도록 계약을 완화했다.
+- 테스트: Worker CRUD 테스트는 사진 없는 메모리 생성 후 댓글 작성까지 검증하고, E2E 테스트는 사진 URL 없이 메모리와 댓글 흐름을 수행한다.
+- 배포 검증: pending.

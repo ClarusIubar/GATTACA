@@ -288,10 +288,7 @@ export async function handleMemories(request: Request, env: WorkerEnv): Promise<
 
   const actor = await requireApprovedWriterContext(request, env)
   const body = await readJsonObject<MemoryInput & { photoUrl?: string }>(request)
-  if (!body.photoUrl) {
-    throw new HttpError(400, 'memory_fields_required', 'photoUrl 값이 필요합니다.')
-  }
-  const created = await createMemory(env.DB, body, body.photoUrl, actor.profile.id)
+  const created = await createMemory(env.DB, body, body.photoUrl ?? '', actor.profile.id)
   return jsonResponse({ ok: true, memory: created }, { status: 201 }, origin)
 }
 
@@ -304,10 +301,7 @@ export async function handleMemoryById(request: Request, env: WorkerEnv): Promis
     const memory = await getMemoryById(env.DB, memoryId)
     requireOwnerOrAdmin(actor, memory.authorId, '메모리')
     const body = await readJsonObject<MemoryInput & { photoUrl?: string }>(request)
-    if (!body.photoUrl) {
-      throw new HttpError(400, 'photo_url_required', 'photoUrl 값이 필요합니다.')
-    }
-    await updateMemory(env.DB, memoryId, body, body.photoUrl)
+    await updateMemory(env.DB, memoryId, body, body.photoUrl ?? '')
     return jsonResponse({ ok: true }, { status: 200 }, origin)
   }
 

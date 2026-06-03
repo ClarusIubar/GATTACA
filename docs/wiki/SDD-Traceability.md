@@ -69,3 +69,12 @@ SDD 완료는 문서 존재만으로 판단하지 않는다. PR merge, productio
 - Validation: `npm run test:e2e`, `npm run test`, `npm run build`, `npm run lint`, source marker search.
 - Deploy evidence: Deploy run `26858067408` success, CodeQL run `26858067104` success.
 - Production evidence: `/events`, `/submit`, `/admin` returned 200 with latest asset `/assets/index-CmTD3GaB.js`; app-specific native datetime/time type markers were absent; `/about` and Checklist markers were absent.
+## TSK-002-17 Traceability
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/44
+- Branch: `tsk-002-17-memory-comment-flow`
+- Scope: 사진 없는 메모리 생성과 그 메모리 하위 댓글 작성 흐름 복구.
+- Implementation: `worker/handlers.ts`, `worker/router-crud.test.ts`, `src/test/e2e-flow.test.tsx`.
+- Contract: `photoUrl`은 선택 입력이다. Worker는 누락된 값을 빈 문자열로 정규화하고, UI는 빈 문자열일 때 fallback 이미지를 보여준다.
+- Test seam: Worker route test가 caption-only memory create와 comment create를 검증한다. E2E는 사진 URL 입력 없이 메모리 생성과 댓글 작성을 수행한다.
+- Validation: `npm.cmd run test:e2e`, `npm.cmd run test -- worker/router-crud.test.ts`, `npm.cmd run test`, `npm.cmd run build`, `npm.cmd run lint`, `git diff --check` passed. Production readback remains pending until main deployment.
