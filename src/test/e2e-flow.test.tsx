@@ -53,8 +53,6 @@ describe('Memory Train end-to-end user flow', () => {
     await user.type(screen.getByLabelText('기록 날짜'), '2026-06-15')
     await user.selectOptions(screen.getByLabelText('기록 시'), '18')
     await user.selectOptions(screen.getByLabelText('기록 분'), '30')
-    await user.type(screen.getByLabelText('또는 사진 URL'), 'https://images.unsplash.com/photo-1501504905252-473c47e087f8')
-
     await user.click(screen.getByRole('button', { name: '메모리 남기기' }))
 
     expect(await screen.findByText('첫 번째 강남 단체 사진')).toBeInTheDocument()

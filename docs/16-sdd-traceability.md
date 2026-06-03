@@ -114,3 +114,17 @@ SDD 완료는 문서가 존재하는 것만으로 판단하지 않는다. PR mer
 - Deploy run: `26858067408` success
 - CodeQL run: `26858067104` success
 - Production readback: `/events`, `/submit`, `/admin` returned 200 with latest asset `/assets/index-CmTD3GaB.js`; app-specific `type:"datetime-local"`/`type:"time"` markers were absent; `/about` and `Checklist` markers were absent; `event-facts`, `datetime-select-grid`, and `admin-stats` markers were present.
+
+## TSK-002-17 Evidence
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/44
+- Branch: `tsk-002-17-memory-comment-flow`
+- PR: pending
+- Merge commit: pending
+- Responsibility map: Worker memory handlers own API input validation and persistence defaults; EventDetailPage owns the user flow for creating a memory and then commenting below it; repository/AppContext keep upload resolution but do not require an uploaded image.
+- Dependency direction: EventDetailPage -> AppContext -> repository -> Worker -> D1. The UI may submit a caption-only memory; Worker normalizes missing `photoUrl` to an empty string before storage.
+- Test seam: `worker/router-crud.test.ts` verifies caption-only memory creation and comment creation under that memory; `src/test/e2e-flow.test.tsx` exercises the browser flow without typing a photo URL.
+- Scope map: `worker/handlers.ts`, `worker/router-crud.test.ts`, `src/test/e2e-flow.test.tsx`, docs/wiki traceability.
+- Architecture risk: keeping `MemoryRecord.photoUrl` as a string avoids a schema migration, but empty string becomes the no-photo sentinel. The UI already renders a fallback image when `photoUrl` is empty, so this remains inside the existing contract.
+- Local validation: `npm.cmd run test:e2e`, `npm.cmd run test -- worker/router-crud.test.ts`, `npm.cmd run test`, `npm.cmd run build`, `npm.cmd run lint`, `git diff --check` passed.
+- Production readback: pending.

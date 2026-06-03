@@ -76,6 +76,70 @@ describe('worker CRUD routes', () => {
     ])
   })
 
+  it('creates a caption-only memory and then allows a comment under it', async () => {
+    store.events.push({
+      id: 'event-1',
+      title: '정거장',
+      event_at: '2026-06-20T19:00',
+      location: '서울',
+      what: '기록',
+      how: '함께',
+      decision_summary: '확정',
+      created_by: 'profile-member',
+    })
+    const { env } = createWorkerEnv(store, {
+      session: createSessionRecord(store.profiles[1]),
+    })
+
+    const memoryResponse = await routeRequest(
+      new Request('https://worker.example.com/api/memories', {
+        method: 'POST',
+        headers: {
+          ...createAuthHeaders(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventId: 'event-1',
+          caption: '사진 없이 남기는 장면',
+          recordedAt: '2026-06-20T19:30',
+        }),
+      }),
+      env,
+    )
+
+    expect(memoryResponse.status).toBe(201)
+    expect(store.memories[0]).toEqual(
+      expect.objectContaining({
+        id: 'memory-00000000-0000-0000-0000-000000000000',
+        photo_url: '',
+        caption: '사진 없이 남기는 장면',
+      }),
+    )
+
+    const commentResponse = await routeRequest(
+      new Request('https://worker.example.com/api/comments', {
+        method: 'POST',
+        headers: {
+          ...createAuthHeaders(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          memoryId: 'memory-00000000-0000-0000-0000-000000000000',
+          content: '댓글도 이어서 남긴다',
+        }),
+      }),
+      env,
+    )
+
+    expect(commentResponse.status).toBe(201)
+    expect(store.comments[0]).toEqual(
+      expect.objectContaining({
+        memory_id: 'memory-00000000-0000-0000-0000-000000000000',
+        content: '댓글도 이어서 남긴다',
+      }),
+    )
+  })
+
   it('allows admin approval updates and owner comment updates through HTTP routes', async () => {
     const { env } = createWorkerEnv(store, {
       session: createSessionRecord(store.profiles[0]),
