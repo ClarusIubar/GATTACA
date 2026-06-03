@@ -74,3 +74,14 @@
 - Production: https://gattaca.jamissue.com/
 - Runtime status: https://gattaca.jamissue.com/api/runtime-status
 - Auth callback: https://gattaca.jamissue.com/api/auth/callback
+## 2026-06-03
+
+### TSK-002-16 핵심 UX와 의미 있는 운영보드 수습
+
+- Issue: https://github.com/ClarusIubar/GATTACA/issues/42
+- Branch: `tsk-002-16-ux-operability-cleanup`
+- 문제: 이벤트 목록에서 `누가/언제/어디서/무엇/어떻게`가 묻혔고, 상세/메모리 입력에는 여전히 native datetime 입력이 남아 있었으며, submit 체크리스트와 운영 원칙 탭은 실사용 가치 없이 화면을 차지했다. 운영실도 읽기 중심이라 실제 운영을 수행하기 어려웠다.
+- 변경: `/about` route/nav를 제거하고, `/submit` 체크리스트 패널을 제거했다. 이벤트 목록에는 라벨형 핵심 정보 블록을 추가했다. Event Detail의 이벤트 수정, 메모리 등록, 메모리 수정은 모두 날짜+시+분 선택으로 통일했다. 운영실에는 운영 요약, 승인/반려, 이벤트 삭제, 상세 진입을 추가했다.
+- 설계 판단: 데이터 계약은 기존 `YYYY-MM-DDTHH:mm` 문자열을 유지한다. 페이지 컴포넌트가 입력과 표시를 담당하고 AppContext/Worker는 기존 persistence/authz 책임을 유지한다.
+- 테스트: `npm run test:e2e`, `npm run test`, `npm run build`, `npm run lint`, source marker search 통과.
+- 남은 증거: PR merge, main 배포, production readback, wiki sync commit.

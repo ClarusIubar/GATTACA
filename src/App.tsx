@@ -8,7 +8,6 @@
  */
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
 import { AppProvider, useAppContext } from './lib/app-context'
-import { AboutPage } from './pages/AboutPage'
 import { AdminPage } from './pages/AdminPage'
 import { EventDetailPage } from './pages/EventDetailPage'
 import { EventsPage } from './pages/EventsPage'
@@ -44,7 +43,6 @@ function Header() {
         <nav className="site-nav" aria-label="주요 메뉴">
           <NavLink to="/events">정거장 목록</NavLink>
           <NavLink to="/submit">일정 등록</NavLink>
-          <NavLink to="/about">운영 원칙</NavLink>
           {isAdmin ? <NavLink to="/admin">운영실</NavLink> : null}
         </nav>
 
@@ -185,7 +183,6 @@ function AppShell() {
           <Route path="/events/:eventId" element={<EventDetailPage />} />
           <Route path="/submit" element={<SubmitPage />} />
           <Route path="/admin" element={<AdminPage />} />
-          <Route path="/about" element={<AboutPage />} />
         </Routes>
       </main>
     </>

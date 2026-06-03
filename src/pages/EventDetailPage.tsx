@@ -9,11 +9,96 @@ import type { CommentInput, EventInput, MemoryInput } from '../lib/types'
 const FALLBACK_IMAGE =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='640' height='420' viewBox='0 0 640 420'><rect width='640' height='420' fill='%23f6efe3'/><circle cx='500' cy='90' r='54' fill='%23d8542f' opacity='0.2'/><path d='M80 285h480' stroke='%23221c16' stroke-width='10' stroke-linecap='round'/><text x='50%25' y='48%25' dominant-baseline='middle' text-anchor='middle' font-family='serif' font-size='24' fill='%236a5445'>Memory Train</text></svg>"
 
+const hours = Array.from({ length: 24 }, (_, index) => index.toString().padStart(2, '0'))
+const minutes = Array.from({ length: 60 }, (_, index) => index.toString().padStart(2, '0'))
+
 const createMemoryForm = (eventId: string): MemoryInput => ({
   eventId,
   caption: '',
   recordedAt: '',
 })
+
+function splitDateTime(value: string) {
+  const [date = '', time = ''] = value.split('T')
+  const [hour = '', minute = ''] = time.split(':')
+  return { date, hour, minute }
+}
+
+function composeDateTime(date: string, hour: string, minute: string) {
+  if (!date && !hour && !minute) {
+    return ''
+  }
+  return `${date}T${hour}:${minute}`
+}
+
+interface DateTimeSelectProps {
+  idPrefix: string
+  value: string
+  onChange: (nextValue: string) => void
+  dateLabel: string
+  hourLabel: string
+  minuteLabel: string
+  required?: boolean
+}
+
+function DateTimeSelect({
+  idPrefix,
+  value,
+  onChange,
+  dateLabel,
+  hourLabel,
+  minuteLabel,
+  required = false,
+}: DateTimeSelectProps) {
+  const { date, hour, minute } = splitDateTime(value)
+
+  return (
+    <div className="datetime-select-grid">
+      <label className="field" htmlFor={`${idPrefix}-date`}>
+        <span>{dateLabel}</span>
+        <input
+          id={`${idPrefix}-date`}
+          type="date"
+          value={date}
+          onChange={(eventObject) => onChange(composeDateTime(eventObject.target.value, hour, minute))}
+          required={required}
+        />
+      </label>
+      <label className="time-select-field" htmlFor={`${idPrefix}-hour`}>
+        <span>{hourLabel}</span>
+        <select
+          id={`${idPrefix}-hour`}
+          value={hour}
+          onChange={(eventObject) => onChange(composeDateTime(date, eventObject.target.value, minute))}
+          required={required}
+        >
+          <option value="">선택</option>
+          {hours.map((hourValue) => (
+            <option key={hourValue} value={hourValue}>
+              {hourValue}시
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="time-select-field" htmlFor={`${idPrefix}-minute`}>
+        <span>{minuteLabel}</span>
+        <select
+          id={`${idPrefix}-minute`}
+          value={minute}
+          onChange={(eventObject) => onChange(composeDateTime(date, hour, eventObject.target.value))}
+          required={required}
+        >
+          <option value="">선택</option>
+          {minutes.map((minuteValue) => (
+            <option key={minuteValue} value={minuteValue}>
+              {minuteValue}분
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  )
+}
 
 export function EventDetailPage() {
   const { eventId } = useParams()
@@ -244,15 +329,15 @@ export function EventDetailPage() {
                 </div>
                 <div className="form-grid form-grid--two">
                   <div className="field">
-                    <label htmlFor="edit-at">언제</label>
-                    <input
-                      id="edit-at"
-                      type="datetime-local"
+                    <span className="field-label">언제</span>
+                    <DateTimeSelect
+                      idPrefix="edit-event-at"
                       value={eventForm.eventAt}
-                      onChange={(eventObject) =>
-                        setEventForm((current) =>
-                          current ? { ...current, eventAt: eventObject.target.value } : current,
-                        )
+                      dateLabel="수정 날짜"
+                      hourLabel="수정 시"
+                      minuteLabel="수정 분"
+                      onChange={(nextValue) =>
+                        setEventForm((current) => (current ? { ...current, eventAt: nextValue } : current))
                       }
                     />
                   </div>
@@ -369,12 +454,14 @@ export function EventDetailPage() {
                             />
                           </div>
                           <div className="field">
-                            <label htmlFor={`memory-recorded-${memory.id}`}>기록 시각 수정</label>
-                            <input
-                              id={`memory-recorded-${memory.id}`}
-                              type="datetime-local"
+                            <span className="field-label">기록 시각 수정</span>
+                            <DateTimeSelect
+                              idPrefix={`memory-recorded-${memory.id}`}
                               value={memoryEdits[memory.id]?.recordedAt ?? memory.recordedAt}
-                              onChange={(eventObject) =>
+                              dateLabel="기록 수정 날짜"
+                              hourLabel="기록 수정 시"
+                              minuteLabel="기록 수정 분"
+                              onChange={(nextValue) =>
                                 setMemoryEdits((current) => ({
                                   ...current,
                                   [memory.id]: {
@@ -383,7 +470,7 @@ export function EventDetailPage() {
                                       caption: memory.caption,
                                       recordedAt: memory.recordedAt,
                                     }),
-                                    recordedAt: eventObject.target.value,
+                                    recordedAt: nextValue,
                                   },
                                 }))
                               }
@@ -566,7 +653,7 @@ export function EventDetailPage() {
           <div className="section-heading">
             <span className="section-heading__eyebrow">Add memory</span>
             <h2>이 정거장에 장면 남기기</h2>
-            <p>사진 파일 또는 URL을 넣고, 그 시간을 설명과 함께 남깁니다.</p>
+            <p>사진 파일 또는 URL을 넣고, 그 시각의 설명과 함께 남깁니다.</p>
           </div>
 
           <form className="form-grid" onSubmit={handleMemorySubmit}>
@@ -578,20 +665,22 @@ export function EventDetailPage() {
                 onChange={(eventObject) =>
                   setMemoryForm((current) => ({ ...current, caption: eventObject.target.value }))
                 }
-                placeholder="사진에 남기고 싶은 말을 적어주세요."
+                placeholder="사진에 담긴 장면과 짧은 말을 적어주세요."
                 required
               />
             </div>
             <div className="field">
-              <label htmlFor="recorded-at">기록 시각</label>
-              <input
-                id="recorded-at"
-                type="datetime-local"
+              <span className="field-label">기록 시각</span>
+              <DateTimeSelect
+                idPrefix="recorded-at"
                 value={memoryForm.recordedAt}
-                onChange={(eventObject) =>
-                  setMemoryForm((current) => ({ ...current, recordedAt: eventObject.target.value }))
-                }
+                dateLabel="기록 날짜"
+                hourLabel="기록 시"
+                minuteLabel="기록 분"
                 required
+                onChange={(nextValue) =>
+                  setMemoryForm((current) => ({ ...current, eventId: selectedEvent.id, recordedAt: nextValue }))
+                }
               />
             </div>
             <div className="field">
